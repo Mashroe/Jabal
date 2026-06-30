@@ -39,7 +39,8 @@ togglePasswordBtn?.addEventListener('click', function() {
 });
 
 // ============================================================
-// LOGIN VIA SUPABASE
+// ============================================================
+// LOGIN (محلي - بدون Supabase)
 // ============================================================
 if (form) {
     form.addEventListener('submit', async (e) => {
@@ -53,30 +54,25 @@ if (form) {
         if (!email) { showError('يرجى إدخال البريد الإلكتروني'); return; }
         if (!password) { showError('يرجى إدخال كلمة المرور'); return; }
         
-        try {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
-            
-            if (error) {
-                console.error('Login error:', error);
-                showError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
-                return;
-            }
-            
-            if (data.session) {
-                console.log('✅ Login successful via Supabase');
-                localStorage.setItem('jabal_auth', 'true');
-                localStorage.setItem('jabal_email', email);
-                showToast('✅ تم تسجيل الدخول بنجاح!', 'success');
-                setTimeout(() => window.location.href = 'index.html', 500);
-                return;
-            }
-        } catch (err) {
-            console.error('Unexpected error:', err);
-            showError('حدث خطأ في الاتصال بقاعدة البيانات');
+        // ===== التحقق من المستخدمين =====
+        const USERS = [
+            { email: 'jabal@gmail.com', password: 'Barakat' },
+            { email: 'moez@gmail.com', password: 'Jabalwase' },
+            // أضف أي مستخدم جديد هنا
+        ];
+        
+        const user = USERS.find(u => u.email === email && u.password === password);
+        
+        if (user) {
+            console.log('✅ Login successful');
+            localStorage.setItem('jabal_auth', 'true');
+            localStorage.setItem('jabal_email', email);
+            showToast('✅ تم تسجيل الدخول بنجاح!', 'success');
+            setTimeout(() => window.location.href = 'index.html', 500);
+            return;
         }
+        
+        showError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
     });
 }
 
