@@ -55,7 +55,7 @@ function renderInvoices(invoices) {
     if (!invoices || invoices.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; color: rgba(255,255,255,0.3); padding: 2rem;">
+                <td colspan="8" style="text-align: center; color: rgba(255,255,255,0.3); padding: 2rem;">
                     لا توجد فواتير
                 </td>
             </tr>
@@ -72,12 +72,14 @@ function renderInvoices(invoices) {
             : status === 'cancelled'
                 ? '<span class="badge badge-danger">ملغية</span>'
                 : '<span class="badge badge-warning">قيد الانتظار</span>';
+        const customerName = invoice.customer_name || 'عميل';
         
         return `
             <tr>
                 <td>${index + 1}</td>
                 <td><strong>#${invoice.id.slice(0, 8).toUpperCase()}</strong></td>
                 <td>${date}</td>
+                <td>${escapeHtml(customerName)}</td>
                 <td>${itemsCount}</td>
                 <td>${formatCurrency(invoice.total)}</td>
                 <td>${statusBadge}</td>
@@ -111,6 +113,7 @@ async function viewInvoice(invoiceId) {
         const total = invoice.total || 0;
         const date = new Date(invoice.created_at).toLocaleString('ar-SA');
         const receiptNumber = invoice.id.slice(0, 8).toUpperCase();
+        const customerName = invoice.customer_name || 'عميل';
         
         const modal = document.getElementById('invoiceDetailModal');
         const body = document.getElementById('invoiceDetailBody');
@@ -123,6 +126,7 @@ async function viewInvoice(invoiceId) {
                         <p>فاتورة بيع</p>
                         <small>رقم: #${receiptNumber}</small>
                         <small>التاريخ: ${date}</small>
+                        <small>👤 العميل: ${escapeHtml(customerName)}</small>
                         <small>الحالة: ${invoice.status === 'completed' ? '✅ مكتملة' : '❌ ملغية'}</small>
                     </div>
                     <div class="receipt-divider"></div>
@@ -167,6 +171,7 @@ async function printInvoice(invoiceId) {
         const total = invoice.total || 0;
         const date = new Date(invoice.created_at).toLocaleString('ar-SA');
         const receiptNumber = invoice.id.slice(0, 8).toUpperCase();
+        const customerName = invoice.customer_name || 'عميل';
         
         let content = `
             <div class="receipt">
@@ -175,6 +180,7 @@ async function printInvoice(invoiceId) {
                     <p>فاتورة بيع</p>
                     <small>رقم: #${receiptNumber}</small>
                     <small>التاريخ: ${date}</small>
+                    <small>👤 العميل: ${escapeHtml(customerName)}</small>
                 </div>
                 <div class="receipt-divider"></div>
                 <div class="receipt-items">
@@ -246,14 +252,12 @@ async function cancelInvoice(invoiceId) {
             return;
         }
         
-        // جلب تفاصيل الفاتورة
         const invoice = allInvoices.find(i => i.id === invoiceId);
         if (!invoice) {
             showToast('الفاتورة غير موجودة', 'error');
             return;
         }
         
-        // تحديث حالة الفاتورة
         const { error } = await supabaseClient
             .from('sales')
             .update({ status: 'cancelled' })
@@ -261,7 +265,6 @@ async function cancelInvoice(invoiceId) {
         
         if (error) throw error;
         
-        // إعادة الكميات للمخزون
         if (invoice.sale_items) {
             for (const item of invoice.sale_items) {
                 const { data: product } = await supabaseClient
@@ -277,7 +280,6 @@ async function cancelInvoice(invoiceId) {
                         .update({ quantity: newQuantity })
                         .eq('id', item.product_id);
                     
-                    // تسجيل حركة مخزون (إرجاع)
                     await supabaseClient
                         .from('stock_movements')
                         .insert([{
@@ -303,14 +305,68 @@ async function cancelInvoice(invoiceId) {
     }
 }
 
+// ============================================================
+// البحث في الفواتير (متقدم)
+// ============================================================
 function searchInvoice() {
     const searchTerm = document.getElementById('invoiceSearchInput')?.value?.toLowerCase() || '';
-    const filtered = allInvoices.filter(invoice => 
-        invoice.id.toLowerCase().includes(searchTerm) ||
-        invoice.sale_items?.some(item => 
-            item.products?.name?.toLowerCase().includes(searchTerm)
-        )
-    );
+    const filterDate = document.getElementById('invoiceDateFilter')?.value;
+    const filterStatus = document.getElementById('invoiceStatusFilter')?.value || 'all';
+    
+    let filtered = allInvoices;
+    
+    // بحث بالاسم أو الرقم
+    if (searchTerm) {
+        filtered = filtered.filter(invoice => 
+            invoice.id.toLowerCase().includes(searchTerm) ||
+            (invoice.customer_name && invoice.customer_name.toLowerCase().includes(searchTerm)) ||
+            invoice.sale_items?.some(item => 
+                item.products?.name?.toLowerCase().includes(searchTerm)
+            )
+        );
+    }
+    
+    // فلترة بالتاريخ
+    if (filterDate) {
+        const searchDate = new Date(filterDate).toDateString();
+        filtered = filtered.filter(invoice => {
+            const invoiceDate = new Date(invoice.created_at).toDateString();
+            return invoiceDate === searchDate;
+        });
+    }
+    
+    // فلترة بالحالة
+    if (filterStatus !== 'all') {
+        filtered = filtered.filter(invoice => 
+            (invoice.status || 'completed') === filterStatus
+        );
+    }
+    
+    renderInvoices(filtered);
+}
+
+// ============================================================
+// تصفية الفواتير حسب اليوم
+// ============================================================
+function filterTodayInvoices() {
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('invoiceDateFilter').value = today;
+    searchInvoice();
+}
+
+// ============================================================
+// تصفية الفواتير حسب الشهر
+// ============================================================
+function filterThisMonthInvoices() {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const filtered = allInvoices.filter(invoice => {
+        const invoiceDate = new Date(invoice.created_at);
+        return invoiceDate >= firstDay && invoiceDate <= lastDay;
+    });
+    
     renderInvoices(filtered);
 }
 
@@ -357,7 +413,6 @@ function printInvoiceDetail() {
     printWindow.document.close();
 }
 
-// ===== EVENT LISTENERS =====
 document.getElementById('closeInvoiceDetailModal')?.addEventListener('click', function() {
     document.getElementById('invoiceDetailModal').classList.remove('active');
 });
