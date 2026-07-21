@@ -222,9 +222,21 @@
                 </div>
 
                 <div class="pos-cart">
+                    <!-- ===== حقل اسم العميل ===== -->
                     <div class="customer-name-field">
                         <label for="customerName">👤 اسم العميل</label>
-                        <input type="text" id="customerName" placeholder="أدخل اسم العميل..." />
+                        <div style="position: relative;">
+                            <input 
+                                type="text" 
+                                id="customerName" 
+                                placeholder="أدخل اسم العميل..." 
+                                class="customer-input"
+                                autocomplete="off"
+                            />
+                            <button type="button" id="clearCustomerName" class="clear-btn" style="display: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="cart-header">
