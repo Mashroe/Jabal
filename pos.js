@@ -238,9 +238,14 @@ async function checkout() {
     try {
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const saleId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+        
+        // ===== جلب اسم العميل =====
+        const customerName = document.getElementById('customerName')?.value.trim() || 'عميل';
+        
         const sale = {
             id: saleId,
             total: total,
+            customer_name: customerName,
             created_at: new Date().toISOString()
         };
         const items = cart.map(item => ({
@@ -248,7 +253,8 @@ async function checkout() {
             sale_id: saleId,
             product_id: item.id,
             quantity: item.quantity,
-            price: item.price
+            price: item.price,
+            product_name: item.name
         }));
         
         lastSaleData = { sale, items, total };
@@ -277,7 +283,8 @@ async function checkout() {
                         .insert([{
                             product_id: item.id,
                             type: 'out',
-                            quantity: item.quantity
+                            quantity: item.quantity,
+                            note: `بيع - فاتورة #${saleId.slice(0, 8)}`
                         }]);
                 }
             }
@@ -320,6 +327,7 @@ function showReceipt(sale, items, total) {
     const body = document.getElementById('receiptBody');
     const date = new Date(sale.created_at).toLocaleString('ar-SA');
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
+    const customerName = sale.customer_name || 'عميل';
     
     if (body) {
         body.innerHTML = `
@@ -329,12 +337,13 @@ function showReceipt(sale, items, total) {
                     <p>فاتورة بيع</p>
                     <small>رقم: #${receiptNumber}</small>
                     <small>التاريخ: ${date}</small>
+                    <small>👤 العميل: ${escapeHtml(customerName)}</small>
                 </div>
                 <div class="receipt-divider"></div>
                 <div class="receipt-items">
                     ${items.map(item => `
                         <div class="receipt-item">
-                            <span>${escapeHtml(item.name)}</span>
+                            <span>${escapeHtml(item.product_name || item.name || 'منتج')}</span>
                             <span>${item.quantity} × ${formatCurrency(item.price)}</span>
                             <span>${formatCurrency(item.price * item.quantity)}</span>
                         </div>
@@ -363,16 +372,18 @@ function sendReceiptWhatsApp() {
     const { sale, items, total } = lastSaleData;
     const date = new Date(sale.created_at).toLocaleString('ar-SA');
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
+    const customerName = sale.customer_name || 'عميل';
     
     let message = '🏷️ *JABAL ALSAFA*\n';
     message += '━'.repeat(30) + '\n';
     message += `📋 فاتورة: #${receiptNumber}\n`;
     message += `📅 التاريخ: ${date}\n`;
+    message += `👤 العميل: ${customerName}\n`;
     message += '━'.repeat(30) + '\n\n';
     message += '*المنتجات:*\n';
     
     items.forEach(item => {
-        message += `• ${item.name}\n`;
+        message += `• ${item.product_name || item.name}\n`;
         message += `  ${item.quantity} × ${formatCurrency(item.price)} = ${formatCurrency(item.price * item.quantity)}\n`;
     });
     
@@ -426,32 +437,28 @@ function printReceipt() {
     printWindow.document.close();
 }
 
-// ===== EVENT LISTENERS =====
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('posSearch')?.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const filtered = posProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
-        renderPOSProducts(filtered);
-    });
-
-    document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
-    document.getElementById('checkoutBtn')?.addEventListener('click', checkout);
-
-    document.getElementById('closeReceiptModal')?.addEventListener('click', () => {
-        document.getElementById('receiptModal')?.classList.remove('active');
-    });
-    document.getElementById('closeReceiptBtn')?.addEventListener('click', () => {
-        document.getElementById('receiptModal')?.classList.remove('active');
-    });
-    document.getElementById('printReceiptBtn')?.addEventListener('click', printReceipt);
-    document.getElementById('whatsappBtn')?.addEventListener('click', sendReceiptWhatsApp);
-
-    document.getElementById('receiptModal')?.addEventListener('click', function(e) {
-        if (e.target === this) this.classList.remove('active');
-    });
+document.getElementById('posSearch')?.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const filtered = posProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
+    renderPOSProducts(filtered);
 });
 
-// ===== EXPORT =====
+document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
+document.getElementById('checkoutBtn')?.addEventListener('click', checkout);
+
+document.getElementById('closeReceiptModal')?.addEventListener('click', () => {
+    document.getElementById('receiptModal')?.classList.remove('active');
+});
+document.getElementById('closeReceiptBtn')?.addEventListener('click', () => {
+    document.getElementById('receiptModal')?.classList.remove('active');
+});
+document.getElementById('printReceiptBtn')?.addEventListener('click', printReceipt);
+document.getElementById('whatsappBtn')?.addEventListener('click', sendReceiptWhatsApp);
+
+document.getElementById('receiptModal')?.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('active');
+});
+
 window.addToCart = addToCart;
 window.updateCartQuantity = updateCartQuantity;
 window.removeFromCart = removeFromCart;
