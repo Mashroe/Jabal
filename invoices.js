@@ -80,7 +80,6 @@ function renderInvoices(invoices) {
             ? '<span class="badge badge-info">بيع</span>' 
             : '<span class="badge badge-warning" style="background: rgba(255,200,0,0.2); color: #ffc800;">مبدئية</span>';
         
-        // ===== أزرار الإجراءات =====
         let actionButtons = `
             <button class="action-btn edit-btn" onclick="viewInvoice('${invoice.id}')" title="عرض التفاصيل">
                 <i class="fas fa-eye"></i>
@@ -90,7 +89,6 @@ function renderInvoices(invoices) {
             </button>
         `;
         
-        // إذا كانت الفاتورة مبدئية ومكتملة، أضف زر "إتمام العملية"
         if (invoiceType === 'draft' && status === 'completed') {
             actionButtons += `
                 <button class="action-btn edit-btn" onclick="completeInvoice('${invoice.id}')" title="إتمام العملية" style="background: rgba(0,200,255,0.15); color: #00c8ff;">
@@ -99,7 +97,6 @@ function renderInvoices(invoices) {
             `;
         }
         
-        // إذا كانت الفاتورة مكتملة، أضف زر الإلغاء
         if (status === 'completed') {
             actionButtons += `
                 <button class="action-btn delete-btn" onclick="cancelInvoice('${invoice.id}')" title="إلغاء الفاتورة">
@@ -140,7 +137,7 @@ async function viewInvoice(invoiceId) {
         const receiptNumber = invoice.id.slice(0, 8).toUpperCase();
         const customerName = invoice.customer_name || 'عميل';
         const invoiceType = invoice.invoice_type || 'final';
-        const typeLabel = invoiceType === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+        const typeLabel = invoiceType === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
         const customerTitle = `السيد/ ${customerName}`;
         
         const modal = document.getElementById('invoiceDetailModal');
@@ -154,7 +151,7 @@ async function viewInvoice(invoiceId) {
                         <p>${typeLabel}</p>
                         <small>رقم: #${receiptNumber}</small>
                         <small>التاريخ: ${date}</small>
-                        <small>👤 العميل: ${escapeHtml(customerTitle)}</small>
+                        <small>${escapeHtml(customerTitle)}</small>
                         <small>الحالة: ${invoice.status === 'completed' ? '✅ مكتملة' : '❌ ملغية'}</small>
                     </div>
                     <div class="receipt-divider"></div>
@@ -181,6 +178,8 @@ async function viewInvoice(invoiceId) {
                         <span>${formatCurrency(total)}</span>
                     </div>
                     <div class="receipt-footer">
+                        <small>📞 للتواصل: 0129321654 - 0922500501</small>
+                        <br>
                         <small>شكراً لتسوقكم معنا</small>
                     </div>
                 </div>
@@ -212,10 +211,10 @@ async function printInvoice(invoiceId) {
         const receiptNumber = invoice.id.slice(0, 8).toUpperCase();
         const customerName = invoice.customer_name || 'عميل';
         const invoiceType = invoice.invoice_type || 'final';
-        const typeLabel = invoiceType === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+        const typeLabel = invoiceType === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
         const customerTitle = `السيد/ ${customerName}`;
+        const statusText = invoiceType === 'final' ? 'معتمدة' : 'غير معتمدة';
         
-        // حساب الإجمالي لكل منتج
         const itemsWithTotal = items.map(item => ({
             ...item,
             total: item.price * item.quantity
@@ -223,21 +222,19 @@ async function printInvoice(invoiceId) {
         
         let content = `
             <div class="receipt-print" id="receiptPrintContent">
-                <!-- ===== رأس الفاتورة ===== -->
                 <div class="receipt-header">
                     <div class="company-name">🏷️ JABAL ALSAFA</div>
                     <div class="receipt-title">${typeLabel}</div>
                     <div class="receipt-meta">
                         <span>📋 #${receiptNumber}</span>
                         <span>📅 ${date}</span>
+                        <span>📌 ${statusText}</span>
                     </div>
                     <div class="customer-line">
-                        <span class="label">👤 العميل</span>
                         <span class="value">${escapeHtml(customerTitle)}</span>
                     </div>
                 </div>
                 
-                <!-- ===== جدول المنتجات ===== -->
                 <table class="receipt-table">
                     <thead>
                         <tr>
@@ -259,14 +256,13 @@ async function printInvoice(invoiceId) {
                     </tbody>
                 </table>
                 
-                <!-- ===== المجموع الكلي ===== -->
                 <div class="receipt-total">
                     <span>المجموع الكلي</span>
                     <span>${formatCurrency(total)}</span>
                 </div>
                 
-                <!-- ===== تذييل الفاتورة ===== -->
                 <div class="receipt-footer">
+                    <p>📞 للتواصل: 0129321654 - 0922500501</p>
                     <p>شكراً لتسوقكم معنا</p>
                     <small>تم الطباعة بواسطة JABAL ALSAFA</small>
                 </div>
@@ -281,7 +277,6 @@ async function printInvoice(invoiceId) {
                 <head>
                     <title>فاتورة #${receiptNumber}</title>
                     <style>
-                        /* ===== RESET ===== */
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body {
                             font-family: 'Arial', 'Tahoma', sans-serif;
@@ -293,8 +288,6 @@ async function printInvoice(invoiceId) {
                             min-height: 100vh;
                             direction: rtl;
                         }
-                        
-                        /* ===== مستطيل الفاتورة ===== */
                         .receipt-print {
                             max-width: 400px;
                             width: 100%;
@@ -305,15 +298,12 @@ async function printInvoice(invoiceId) {
                             border-radius: 14px;
                             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
                         }
-                        
-                        /* ===== رأس الفاتورة ===== */
                         .receipt-header {
                             text-align: center;
                             margin-bottom: 20px;
                             padding-bottom: 18px;
                             border-bottom: 2px dashed #e8e8e8;
                         }
-                        
                         .company-name {
                             font-size: 24px;
                             font-weight: 800;
@@ -321,13 +311,11 @@ async function printInvoice(invoiceId) {
                             letter-spacing: 0.5px;
                             margin-bottom: 4px;
                         }
-                        
                         .receipt-title {
                             font-size: 15px;
                             color: #555;
                             margin-bottom: 6px;
                         }
-                        
                         .receipt-meta {
                             display: flex;
                             justify-content: center;
@@ -336,43 +324,30 @@ async function printInvoice(invoiceId) {
                             color: #888;
                             margin-bottom: 12px;
                         }
-                        
                         .receipt-meta span {
                             background: #f5f5f5;
                             padding: 3px 12px;
                             border-radius: 4px;
                         }
-                        
-                        /* ===== اسم العميل ===== */
                         .customer-line {
                             display: flex;
-                            justify-content: space-between;
-                            align-items: center;
+                            justify-content: center;
                             padding: 8px 14px;
                             background: #f0f7ff;
                             border-radius: 8px;
                             border-right: 4px solid #0077b6;
                             font-size: 14px;
                         }
-                        
-                        .customer-line .label {
-                            color: #888;
-                            font-weight: 500;
-                        }
-                        
                         .customer-line .value {
                             color: #1a1a2e;
                             font-weight: 600;
                         }
-                        
-                        /* ===== جدول المنتجات ===== */
                         .receipt-table {
                             width: 100%;
                             border-collapse: collapse;
                             margin: 15px 0 10px;
                             font-size: 13px;
                         }
-                        
                         .receipt-table thead th {
                             background: #f7f9fc;
                             padding: 10px 8px;
@@ -384,19 +359,15 @@ async function printInvoice(invoiceId) {
                             text-transform: uppercase;
                             letter-spacing: 0.3px;
                         }
-                        
                         .receipt-table tbody td {
                             padding: 9px 8px;
                             border-bottom: 1px solid #f0f0f0;
                             color: #333;
                             font-size: 13px;
                         }
-                        
                         .receipt-table tbody tr:last-child td {
                             border-bottom: none;
                         }
-                        
-                        /* ===== المجموع الكلي ===== */
                         .receipt-total {
                             display: flex;
                             justify-content: space-between;
@@ -407,34 +378,27 @@ async function printInvoice(invoiceId) {
                             font-size: 18px;
                             font-weight: 700;
                         }
-                        
                         .receipt-total span:last-child {
                             color: #0077b6;
                             font-size: 22px;
                         }
-                        
-                        /* ===== تذييل الفاتورة ===== */
                         .receipt-footer {
                             text-align: center;
                             margin-top: 20px;
                             padding-top: 15px;
                             border-top: 1px solid #eee;
                         }
-                        
                         .receipt-footer p {
                             color: #555;
                             font-size: 13px;
                             font-weight: 500;
                         }
-                        
                         .receipt-footer small {
                             display: block;
                             color: #bbb;
                             font-size: 10px;
                             margin-top: 4px;
                         }
-                        
-                        /* ===== زر الطباعة ===== */
                         .print-btn {
                             display: block;
                             width: 100%;
@@ -449,14 +413,11 @@ async function printInvoice(invoiceId) {
                             cursor: pointer;
                             transition: all 0.3s ease;
                         }
-                        
                         .print-btn:hover {
                             background: #005a8c;
                             transform: translateY(-2px);
                             box-shadow: 0 6px 20px rgba(0, 119, 182, 0.3);
                         }
-                        
-                        /* ===== الطباعة ===== */
                         @media print {
                             body {
                                 background: white !important;
@@ -464,7 +425,6 @@ async function printInvoice(invoiceId) {
                                 margin: 0 !important;
                                 display: block !important;
                             }
-                            
                             .receipt-print {
                                 border: 1px solid #ddd !important;
                                 box-shadow: none !important;
@@ -472,29 +432,23 @@ async function printInvoice(invoiceId) {
                                 max-width: 100% !important;
                                 border-radius: 0 !important;
                             }
-                            
                             .receipt-table thead th {
                                 background: #f0f0f0 !important;
                                 -webkit-print-color-adjust: exact !important;
                                 print-color-adjust: exact !important;
                             }
-                            
                             .customer-line {
                                 background: #f0f7ff !important;
                                 -webkit-print-color-adjust: exact !important;
                                 print-color-adjust: exact !important;
                             }
-                            
                             .print-btn {
                                 display: none !important;
                             }
-                            
                             .no-print {
                                 display: none !important;
                             }
                         }
-                        
-                        /* ===== استجابة ===== */
                         @media (max-width: 480px) {
                             body { padding: 10px; }
                             .receipt-print { padding: 18px 15px; }
@@ -535,7 +489,7 @@ async function printInvoice(invoiceId) {
 // إتمام العملية (تحويل فاتورة مبدئية لنهائية)
 // ============================================================
 async function completeInvoice(invoiceId) {
-    if (!confirm('⚠️ هل أنت متأكد من إتمام هذه العملية؟\nسيتم تحويل الفاتورة المبدئية إلى فاتورة بيع نهائية.')) {
+    if (!confirm('⚠️ هل أنت متأكد من إتمام هذه العملية؟\nسيتم تحويل الفاتورة المبدئية إلى فاتورة بيع.')) {
         return;
     }
     
@@ -545,14 +499,12 @@ async function completeInvoice(invoiceId) {
             return;
         }
         
-        // جلب الفاتورة
         const invoice = allInvoices.find(i => i.id === invoiceId);
         if (!invoice) {
             showToast('الفاتورة غير موجودة', 'error');
             return;
         }
         
-        // 1. تحديث نوع الفاتورة
         const { error: updateError } = await supabaseClient
             .from('sales')
             .update({ 
@@ -563,7 +515,6 @@ async function completeInvoice(invoiceId) {
         
         if (updateError) throw updateError;
         
-        // 2. تحديث المخزون (تنقص الكميات)
         if (invoice.sale_items) {
             for (const item of invoice.sale_items) {
                 const { data: product } = await supabaseClient
@@ -579,7 +530,6 @@ async function completeInvoice(invoiceId) {
                         .update({ quantity: newQuantity })
                         .eq('id', item.product_id);
                     
-                    // تسجيل حركة مخزون
                     await supabaseClient
                         .from('stock_movements')
                         .insert([{
