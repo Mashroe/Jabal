@@ -238,19 +238,27 @@ async function printInvoice(invoiceId) {
                 <table class="receipt-table">
                     <thead>
                         <tr>
-                            <th style="text-align:right; width:40%;">الصنف</th>
-                            <th style="text-align:center; width:15%;">الكمية</th>
-                            <th style="text-align:left; width:22%;">السعر</th>
-                            <th style="text-align:left; width:23%;">الإجمالي</th>
+                            <th style="text-align:right; width:45%; padding:10px 8px;">الصنف</th>
+                            <th style="text-align:center; width:15%; padding:10px 8px;">الكمية</th>
+                            <th style="text-align:left; width:20%; padding:10px 8px;">السعر</th>
+                            <th style="text-align:left; width:20%; padding:10px 8px;">الإجمالي</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${itemsWithTotal.map(item => `
                             <tr>
-                                <td style="text-align:right; font-weight:500;">${escapeHtml(item.products?.name || 'منتج محذوف')}</td>
-                                <td style="text-align:center;">${item.quantity}</td>
-                                <td style="text-align:left;">${formatCurrency(item.price)}</td>
-                                <td style="text-align:left; font-weight:700; color:#0077b6;">${formatCurrency(item.total)}</td>
+                                <td style="text-align:right; font-weight:500; padding:10px 8px; border-bottom:1px solid #f0f0f0;">
+                                    ${escapeHtml(item.products?.name || 'منتج محذوف')}
+                                </td>
+                                <td style="text-align:center; padding:10px 8px; border-bottom:1px solid #f0f0f0;">
+                                    ${item.quantity}
+                                </td>
+                                <td style="text-align:left; padding:10px 8px; border-bottom:1px solid #f0f0f0;">
+                                    ${formatCurrency(item.price)}
+                                </td>
+                                <td style="text-align:left; font-weight:700; color:#0077b6; padding:10px 8px; border-bottom:1px solid #f0f0f0;">
+                                    ${formatCurrency(item.total)}
+                                </td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -269,7 +277,7 @@ async function printInvoice(invoiceId) {
             </div>
         `;
         
-        const printWindow = window.open('', '_blank', 'width=420,height=650');
+        const printWindow = window.open('', '_blank', 'width=500,height=700');
         if (!printWindow) return;
         
         printWindow.document.write(`
@@ -289,64 +297,67 @@ async function printInvoice(invoiceId) {
                             direction: rtl;
                         }
                         .receipt-print {
-                            max-width: 400px;
+                            max-width: 450px;
                             width: 100%;
                             margin: 0 auto;
                             background: #ffffff;
-                            padding: 30px 25px;
+                            padding: 35px 30px;
                             border: 2px solid #1a1a2e;
-                            border-radius: 14px;
-                            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+                            border-radius: 16px;
+                            box-shadow: 0 12px 50px rgba(0, 0, 0, 0.12);
                         }
                         .receipt-header {
                             text-align: center;
                             margin-bottom: 20px;
-                            padding-bottom: 18px;
-                            border-bottom: 2px dashed #e8e8e8;
+                            padding-bottom: 20px;
+                            border-bottom: 2px dashed #e0e0e0;
                         }
                         .company-name {
-                            font-size: 24px;
+                            font-size: 26px;
                             font-weight: 800;
                             color: #0077b6;
                             letter-spacing: 0.5px;
                             margin-bottom: 4px;
                         }
                         .receipt-title {
-                            font-size: 15px;
+                            font-size: 16px;
                             color: #555;
-                            margin-bottom: 6px;
+                            margin-bottom: 8px;
                         }
                         .receipt-meta {
                             display: flex;
                             justify-content: center;
-                            gap: 10px;
+                            gap: 12px;
                             font-size: 11px;
                             color: #888;
                             margin-bottom: 12px;
+                            flex-wrap: wrap;
                         }
                         .receipt-meta span {
                             background: #f5f5f5;
-                            padding: 3px 12px;
-                            border-radius: 4px;
+                            padding: 4px 14px;
+                            border-radius: 6px;
                         }
                         .customer-line {
                             display: flex;
                             justify-content: center;
-                            padding: 8px 14px;
+                            padding: 10px 16px;
                             background: #f0f7ff;
-                            border-radius: 8px;
+                            border-radius: 10px;
                             border-right: 4px solid #0077b6;
-                            font-size: 14px;
-                        }
-                        .customer-line .value {
-                            color: #1a1a2e;
+                            font-size: 15px;
                             font-weight: 600;
+                            color: #1a1a2e;
+                        }
+                        .receipt-divider {
+                            border-top: 2px dashed #e0e0e0;
+                            margin: 12px 0;
                         }
                         .receipt-table {
                             width: 100%;
                             border-collapse: collapse;
-                            margin: 15px 0 10px;
-                            font-size: 13px;
+                            margin: 12px 0;
+                            font-size: 14px;
                         }
                         .receipt-table thead th {
                             background: #f7f9fc;
@@ -354,16 +365,31 @@ async function printInvoice(invoiceId) {
                             text-align: center;
                             font-weight: 700;
                             color: #444;
-                            border-bottom: 2px solid #e0e0e0;
-                            font-size: 12px;
+                            border-bottom: 2px solid #d0d0d0;
+                            font-size: 13px;
                             text-transform: uppercase;
-                            letter-spacing: 0.3px;
+                            letter-spacing: 0.5px;
+                        }
+                        .receipt-table thead th:first-child {
+                            text-align: right;
+                        }
+                        .receipt-table thead th:last-child {
+                            text-align: left;
                         }
                         .receipt-table tbody td {
-                            padding: 9px 8px;
+                            padding: 10px 8px;
                             border-bottom: 1px solid #f0f0f0;
                             color: #333;
-                            font-size: 13px;
+                            font-size: 14px;
+                        }
+                        .receipt-table tbody td:first-child {
+                            text-align: right;
+                            font-weight: 500;
+                        }
+                        .receipt-table tbody td:last-child {
+                            text-align: left;
+                            font-weight: 700;
+                            color: #0077b6;
                         }
                         .receipt-table tbody tr:last-child td {
                             border-bottom: none;
@@ -372,15 +398,15 @@ async function printInvoice(invoiceId) {
                             display: flex;
                             justify-content: space-between;
                             align-items: center;
-                            padding: 15px 5px 10px;
-                            margin-top: 8px;
+                            padding: 18px 5px 12px;
+                            margin-top: 10px;
                             border-top: 3px double #0077b6;
-                            font-size: 18px;
+                            font-size: 20px;
                             font-weight: 700;
                         }
                         .receipt-total span:last-child {
                             color: #0077b6;
-                            font-size: 22px;
+                            font-size: 24px;
                         }
                         .receipt-footer {
                             text-align: center;
@@ -392,6 +418,7 @@ async function printInvoice(invoiceId) {
                             color: #555;
                             font-size: 13px;
                             font-weight: 500;
+                            margin: 2px 0;
                         }
                         .receipt-footer small {
                             display: block;
