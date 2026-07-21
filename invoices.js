@@ -196,7 +196,7 @@ async function viewInvoice(invoiceId) {
 }
 
 // ============================================================
-// طباعة الفاتورة (احترافية)
+// طباعة الفاتورة (النسخة النهائية الاحترافية)
 // ============================================================
 async function printInvoice(invoiceId) {
     try {
@@ -215,56 +215,65 @@ async function printInvoice(invoiceId) {
         const typeLabel = invoiceType === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
         const customerTitle = `السيد/ ${customerName}`;
         
+        // حساب الإجمالي لكل منتج
+        const itemsWithTotal = items.map(item => ({
+            ...item,
+            total: item.price * item.quantity
+        }));
+        
         let content = `
             <div class="receipt-print" id="receiptPrintContent">
+                <!-- ===== رأس الفاتورة ===== -->
                 <div class="receipt-header">
-                    <h2>🏷️ JABAL ALSAFA</h2>
-                    <p>${typeLabel}</p>
-                    <small>رقم: #${receiptNumber}</small>
-                    <small>التاريخ: ${date}</small>
+                    <div class="company-name">🏷️ JABAL ALSAFA</div>
+                    <div class="receipt-title">${typeLabel}</div>
+                    <div class="receipt-meta">
+                        <span>📋 #${receiptNumber}</span>
+                        <span>📅 ${date}</span>
+                    </div>
                     <div class="customer-line">
-                        <span>👤 العميل: <strong>${escapeHtml(customerTitle)}</strong></span>
+                        <span class="label">👤 العميل</span>
+                        <span class="value">${escapeHtml(customerTitle)}</span>
                     </div>
                 </div>
-                <div class="receipt-divider"></div>
                 
+                <!-- ===== جدول المنتجات ===== -->
                 <table class="receipt-table">
                     <thead>
                         <tr>
-                            <th>الصنف</th>
-                            <th>الكمية</th>
-                            <th>السعر</th>
-                            <th>الإجمالي</th>
+                            <th style="text-align:right; width:40%;">الصنف</th>
+                            <th style="text-align:center; width:15%;">الكمية</th>
+                            <th style="text-align:left; width:22%;">السعر</th>
+                            <th style="text-align:left; width:23%;">الإجمالي</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${items.map(item => `
+                        ${itemsWithTotal.map(item => `
                             <tr>
-                                <td>${escapeHtml(item.products?.name || 'منتج محذوف')}</td>
-                                <td>${item.quantity}</td>
-                                <td>${formatCurrency(item.price)}</td>
-                                <td>${formatCurrency(item.price * item.quantity)}</td>
+                                <td style="text-align:right; font-weight:500;">${escapeHtml(item.products?.name || 'منتج محذوف')}</td>
+                                <td style="text-align:center;">${item.quantity}</td>
+                                <td style="text-align:left;">${formatCurrency(item.price)}</td>
+                                <td style="text-align:left; font-weight:700; color:#0077b6;">${formatCurrency(item.total)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
                 
-                <div class="receipt-divider"></div>
-                
+                <!-- ===== المجموع الكلي ===== -->
                 <div class="receipt-total">
                     <span>المجموع الكلي</span>
                     <span>${formatCurrency(total)}</span>
                 </div>
                 
+                <!-- ===== تذييل الفاتورة ===== -->
                 <div class="receipt-footer">
-                    <small>شكراً لتسوقكم معنا</small>
-                    <br>
-                    <small style="font-size: 9px; color: #ccc;">تم الطباعة بواسطة JABAL ALSAFA</small>
+                    <p>شكراً لتسوقكم معنا</p>
+                    <small>تم الطباعة بواسطة JABAL ALSAFA</small>
                 </div>
             </div>
         `;
         
-        const printWindow = window.open('', '_blank', 'width=420,height=600');
+        const printWindow = window.open('', '_blank', 'width=420,height=650');
         if (!printWindow) return;
         
         printWindow.document.write(`
@@ -272,6 +281,7 @@ async function printInvoice(invoiceId) {
                 <head>
                     <title>فاتورة #${receiptNumber}</title>
                     <style>
+                        /* ===== RESET ===== */
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body {
                             font-family: 'Arial', 'Tahoma', sans-serif;
@@ -283,105 +293,148 @@ async function printInvoice(invoiceId) {
                             min-height: 100vh;
                             direction: rtl;
                         }
+                        
+                        /* ===== مستطيل الفاتورة ===== */
                         .receipt-print {
-                            max-width: 380px;
+                            max-width: 400px;
                             width: 100%;
                             margin: 0 auto;
                             background: #ffffff;
-                            padding: 25px 20px;
+                            padding: 30px 25px;
                             border: 2px solid #1a1a2e;
-                            border-radius: 12px;
-                            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+                            border-radius: 14px;
+                            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
                         }
-                        .receipt-print .receipt-header {
+                        
+                        /* ===== رأس الفاتورة ===== */
+                        .receipt-header {
                             text-align: center;
                             margin-bottom: 20px;
-                            padding-bottom: 15px;
-                            border-bottom: 2px dashed #e0e0e0;
+                            padding-bottom: 18px;
+                            border-bottom: 2px dashed #e8e8e8;
                         }
-                        .receipt-print .receipt-header h2 {
-                            font-size: 22px;
+                        
+                        .company-name {
+                            font-size: 24px;
                             font-weight: 800;
                             color: #0077b6;
-                            margin: 0 0 5px;
-                            letter-spacing: 1px;
+                            letter-spacing: 0.5px;
+                            margin-bottom: 4px;
                         }
-                        .receipt-print .receipt-header p {
-                            font-size: 14px;
+                        
+                        .receipt-title {
+                            font-size: 15px;
                             color: #555;
-                            margin: 3px 0;
+                            margin-bottom: 6px;
                         }
-                        .receipt-print .receipt-header small {
-                            display: block;
+                        
+                        .receipt-meta {
+                            display: flex;
+                            justify-content: center;
+                            gap: 10px;
                             font-size: 11px;
-                            color: #999;
+                            color: #888;
+                            margin-bottom: 12px;
                         }
-                        .receipt-print .customer-line {
-                            margin: 12px 0 8px;
-                            padding: 8px 12px;
+                        
+                        .receipt-meta span {
+                            background: #f5f5f5;
+                            padding: 3px 12px;
+                            border-radius: 4px;
+                        }
+                        
+                        /* ===== اسم العميل ===== */
+                        .customer-line {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 8px 14px;
                             background: #f0f7ff;
                             border-radius: 8px;
                             border-right: 4px solid #0077b6;
                             font-size: 14px;
                         }
-                        .receipt-print .customer-line strong {
-                            color: #0077b6;
-                        }
-                        .receipt-print .receipt-divider {
-                            border-top: 2px dashed #ddd;
-                            margin: 12px 0;
-                        }
-                        .receipt-print .receipt-table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin: 10px 0;
-                            font-size: 13px;
-                        }
-                        .receipt-print .receipt-table th {
-                            background: #f5f5f5;
-                            padding: 8px 6px;
-                            text-align: center;
-                            font-weight: 700;
-                            color: #333;
-                            border-bottom: 2px solid #ddd;
-                            font-size: 12px;
-                        }
-                        .receipt-print .receipt-table td {
-                            padding: 7px 6px;
-                            text-align: center;
-                            border-bottom: 1px solid #eee;
-                            color: #444;
-                        }
-                        .receipt-print .receipt-table td:first-child {
-                            text-align: right;
+                        
+                        .customer-line .label {
+                            color: #888;
                             font-weight: 500;
                         }
-                        .receipt-print .receipt-table td:last-child {
-                            font-weight: 700;
-                            color: #0077b6;
+                        
+                        .customer-line .value {
+                            color: #1a1a2e;
+                            font-weight: 600;
                         }
-                        .receipt-print .receipt-total {
+                        
+                        /* ===== جدول المنتجات ===== */
+                        .receipt-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 15px 0 10px;
+                            font-size: 13px;
+                        }
+                        
+                        .receipt-table thead th {
+                            background: #f7f9fc;
+                            padding: 10px 8px;
+                            text-align: center;
+                            font-weight: 700;
+                            color: #444;
+                            border-bottom: 2px solid #e0e0e0;
+                            font-size: 12px;
+                            text-transform: uppercase;
+                            letter-spacing: 0.3px;
+                        }
+                        
+                        .receipt-table tbody td {
+                            padding: 9px 8px;
+                            border-bottom: 1px solid #f0f0f0;
+                            color: #333;
+                            font-size: 13px;
+                        }
+                        
+                        .receipt-table tbody tr:last-child td {
+                            border-bottom: none;
+                        }
+                        
+                        /* ===== المجموع الكلي ===== */
+                        .receipt-total {
                             display: flex;
                             justify-content: space-between;
                             align-items: center;
+                            padding: 15px 5px 10px;
+                            margin-top: 8px;
+                            border-top: 3px double #0077b6;
                             font-size: 18px;
                             font-weight: 700;
-                            padding: 15px 0 10px;
-                            margin-top: 10px;
-                            border-top: 3px double #0077b6;
                         }
-                        .receipt-print .receipt-total span:last-child {
+                        
+                        .receipt-total span:last-child {
                             color: #0077b6;
                             font-size: 22px;
                         }
-                        .receipt-print .receipt-footer {
+                        
+                        /* ===== تذييل الفاتورة ===== */
+                        .receipt-footer {
                             text-align: center;
-                            color: #999;
-                            font-size: 11px;
                             margin-top: 20px;
                             padding-top: 15px;
                             border-top: 1px solid #eee;
                         }
+                        
+                        .receipt-footer p {
+                            color: #555;
+                            font-size: 13px;
+                            font-weight: 500;
+                        }
+                        
+                        .receipt-footer small {
+                            display: block;
+                            color: #bbb;
+                            font-size: 10px;
+                            margin-top: 4px;
+                        }
+                        
+                        /* ===== زر الطباعة ===== */
                         .print-btn {
                             display: block;
                             width: 100%;
@@ -396,43 +449,62 @@ async function printInvoice(invoiceId) {
                             cursor: pointer;
                             transition: all 0.3s ease;
                         }
+                        
                         .print-btn:hover {
                             background: #005a8c;
                             transform: translateY(-2px);
                             box-shadow: 0 6px 20px rgba(0, 119, 182, 0.3);
                         }
+                        
+                        /* ===== الطباعة ===== */
                         @media print {
                             body {
                                 background: white !important;
-                                padding: 10px !important;
+                                padding: 5px !important;
                                 margin: 0 !important;
                                 display: block !important;
                             }
+                            
                             .receipt-print {
                                 border: 1px solid #ddd !important;
                                 box-shadow: none !important;
-                                padding: 20px !important;
+                                padding: 15px !important;
                                 max-width: 100% !important;
                                 border-radius: 0 !important;
                             }
-                            .receipt-print .receipt-table th {
+                            
+                            .receipt-table thead th {
                                 background: #f0f0f0 !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
                             }
+                            
+                            .customer-line {
+                                background: #f0f7ff !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                            
                             .print-btn {
                                 display: none !important;
                             }
+                            
                             .no-print {
                                 display: none !important;
                             }
                         }
+                        
+                        /* ===== استجابة ===== */
                         @media (max-width: 480px) {
                             body { padding: 10px; }
-                            .receipt-print { padding: 15px; }
-                            .receipt-print .receipt-total { font-size: 16px; }
-                            .receipt-print .receipt-total span:last-child { font-size: 18px; }
-                            .receipt-print .receipt-table { font-size: 12px; }
-                            .receipt-print .receipt-table th,
-                            .receipt-print .receipt-table td { padding: 5px 4px; }
+                            .receipt-print { padding: 18px 15px; }
+                            .receipt-total { font-size: 16px; }
+                            .receipt-total span:last-child { font-size: 18px; }
+                            .receipt-table { font-size: 12px; }
+                            .receipt-table thead th,
+                            .receipt-table tbody td { padding: 6px 4px; }
+                            .company-name { font-size: 20px; }
+                            .receipt-meta { flex-wrap: wrap; gap: 6px; }
                         }
                     </style>
                 </head>
