@@ -1,4 +1,8 @@
-/* ===== RESET & BASE ===== */
+/* ============================================================
+   JABAL ALSAFA - STYLE.CSS (الملف الكامل)
+   ============================================================ */
+
+/* ===== 1. RESET & BASE ===== */
 * {
     margin: 0;
     padding: 0;
@@ -13,7 +17,7 @@ body {
     overflow-x: hidden;
 }
 
-/* ===== SIDEBAR ===== */
+/* ===== 2. SIDEBAR ===== */
 .sidebar {
     position: fixed;
     top: 0;
@@ -101,7 +105,7 @@ body {
     margin-top: auto;
 }
 
-/* ===== SIDEBAR BUTTONS ===== */
+/* ===== 3. SIDEBAR BUTTONS ===== */
 .logout-btn {
     width: 100%;
     display: flex;
@@ -186,7 +190,7 @@ body {
     font-size: 1.1rem;
 }
 
-/* ===== MAIN CONTENT ===== */
+/* ===== 4. MAIN CONTENT & TOPBAR ===== */
 .main-content {
     margin-right: 280px;
     min-height: 100vh;
@@ -194,7 +198,6 @@ body {
     background: radial-gradient(ellipse at 50% 0%, #0a1628, #000000);
 }
 
-/* ===== TOPBAR ===== */
 .topbar {
     display: flex;
     align-items: center;
@@ -262,7 +265,7 @@ body {
     50% { opacity: 0.3; }
 }
 
-/* ===== STATS GRID ===== */
+/* ===== 5. STATS GRID ===== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -333,7 +336,7 @@ body {
     color: #ffc800;
 }
 
-/* ===== QUICK ACTIONS ===== */
+/* ===== 6. QUICK ACTIONS ===== */
 .quick-actions {
     display: flex;
     gap: 1rem;
@@ -341,7 +344,7 @@ body {
     flex-wrap: wrap;
 }
 
-/* ===== BUTTONS ===== */
+/* ===== 7. BUTTONS ===== */
 .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -424,7 +427,7 @@ body {
     box-shadow: 0 8px 25px rgba(37, 211, 102, 0.3);
 }
 
-/* ===== SEARCH ===== */
+/* ===== 8. SEARCH ===== */
 .search-box {
     flex: 1;
     min-width: 200px;
@@ -461,7 +464,7 @@ body {
     color: rgba(255, 255, 255, 0.2);
 }
 
-/* ===== TABLE ===== */
+/* ===== 9. TABLE ===== */
 .table-container {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -502,7 +505,7 @@ body {
     color: #fff;
 }
 
-/* ===== BADGES ===== */
+/* ===== 10. BADGES ===== */
 .badge {
     display: inline-block;
     padding: 0.2rem 0.8rem;
@@ -536,7 +539,18 @@ body {
     color: #00c8ff;
 }
 
-/* ===== ACTION BUTTONS ===== */
+.badge-draft {
+    background: rgba(255, 200, 0, 0.15);
+    color: #ffc800;
+    border: 1px solid rgba(255, 200, 0, 0.1);
+}
+
+.badge-final {
+    background: rgba(0, 200, 255, 0.1);
+    color: #00c8ff;
+}
+
+/* ===== 11. ACTION BUTTONS ===== */
 .action-btn {
     width: 34px;
     height: 34px;
@@ -568,7 +582,17 @@ body {
     color: #ff6b6b;
 }
 
-/* ===== MODALS ===== */
+.action-btn.complete-btn {
+    background: rgba(0, 200, 255, 0.1);
+    color: #00c8ff;
+}
+
+.action-btn.complete-btn:hover {
+    background: rgba(0, 200, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* ===== 12. MODALS ===== */
 .modal {
     display: none;
     position: fixed;
@@ -649,7 +673,7 @@ body {
     flex-wrap: wrap;
 }
 
-/* ===== FORM GROUPS ===== */
+/* ===== 13. FORM GROUPS ===== */
 .form-group {
     margin-bottom: 1.2rem;
 }
@@ -694,7 +718,7 @@ body {
     color: #fff;
 }
 
-/* ===== TOAST ===== */
+/* ===== 14. TOAST ===== */
 .toast-notification {
     position: fixed;
     bottom: 2rem;
@@ -752,7 +776,7 @@ body {
     border-color: rgba(0, 200, 255, 0.2);
 }
 
-/* ===== LOGIN PAGE ===== */
+/* ===== 15. LOGIN PAGE ===== */
 .login-container {
     width: 100%;
     max-width: 440px;
@@ -919,7 +943,7 @@ body {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -970,9 +994,15 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* ============================================================
-   PRODUCTS PAGE
-   ============================================================ */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+/* ===== 16. PRODUCTS PAGE ===== */
 .section-header {
     display: flex;
     justify-content: space-between;
@@ -1051,9 +1081,7 @@ body {
     margin-bottom: 1.5rem;
 }
 
-/* ============================================================
-   INVENTORY STYLES
-   ============================================================ */
+/* ===== 17. INVENTORY PAGE ===== */
 .page-content {
     padding: 0;
 }
@@ -1130,7 +1158,7 @@ body {
     min-width: 150px;
 }
 
-/* ===== ALERTS ===== */
+/* ===== 18. ALERTS ===== */
 .alert-card {
     display: flex;
     gap: 1rem;
@@ -1197,9 +1225,7 @@ body {
     color: #00ff96;
 }
 
-/* ============================================================
-   COUNTING STYLES
-   ============================================================ */
+/* ===== 19. COUNTING PAGE ===== */
 .counting-header {
     display: flex;
     justify-content: space-between;
@@ -1322,9 +1348,7 @@ td.negative {
     margin-bottom: 1rem;
 }
 
-/* ============================================================
-   REPORTS STYLES
-   ============================================================ */
+/* ===== 20. REPORTS PAGE ===== */
 .reports-header {
     display: flex;
     justify-content: space-between;
@@ -1456,9 +1480,7 @@ td.negative {
     font-size: 0.9rem;
 }
 
-/* ============================================================
-   CHARTS STYLES
-   ============================================================ */
+/* ===== 21. CHARTS ===== */
 .charts-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -1499,9 +1521,7 @@ td.negative {
     width: 100%;
 }
 
-/* ============================================================
-   EXPORT STYLES
-   ============================================================ */
+/* ===== 22. EXPORT ===== */
 .export-section {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -1539,9 +1559,7 @@ td.negative {
     font-size: 0.85rem;
 }
 
-/* ============================================================
-   PURCHASE STYLES
-   ============================================================ */
+/* ===== 23. PURCHASE ===== */
 .purchase-products-section {
     background: rgba(255, 255, 255, 0.02);
     border-radius: 12px;
@@ -1603,9 +1621,7 @@ td.negative {
     color: #00c8ff;
 }
 
-/* ============================================================
-   CUSTOMER STYLES
-   ============================================================ */
+/* ===== 24. CUSTOMER ===== */
 .customer-history {
     padding: 0.5rem 0;
 }
@@ -1655,9 +1671,7 @@ td.negative {
     color: rgba(255, 255, 255, 0.7);
 }
 
-/* ============================================================
-   PURCHASE DETAIL
-   ============================================================ */
+/* ===== 25. PURCHASE DETAIL ===== */
 .purchase-detail .purchase-info p {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
@@ -1668,9 +1682,7 @@ td.negative {
     color: #fff;
 }
 
-/* ============================================================
-   POS STYLES
-   ============================================================ */
+/* ===== 26. POS ===== */
 .pos-content {
     padding: 0;
 }
@@ -1789,6 +1801,7 @@ td.negative {
     color: #ff6b6b;
 }
 
+/* ===== 27. CART ===== */
 .pos-cart {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -1978,7 +1991,7 @@ td.negative {
     padding: 0.7rem;
 }
 
-/* ===== RECEIPT ===== */
+/* ===== 28. RECEIPT ===== */
 .receipt {
     font-family: 'Inter', sans-serif;
 }
@@ -1989,14 +2002,16 @@ td.negative {
 }
 
 .receipt-header h2 {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+    font-weight: 800;
     color: #fff;
     margin: 0;
 }
 
 .receipt-header p {
-    color: rgba(255, 255, 255, 0.6);
-    margin: 0.25rem 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
+    margin: 0.15rem 0;
 }
 
 .receipt-header small {
@@ -2006,41 +2021,374 @@ td.negative {
 }
 
 .receipt-divider {
-    border-top: 1px dashed rgba(255, 255, 255, 0.1);
-    margin: 0.75rem 0;
+    border-top: 1px dashed rgba(255, 255, 255, 0.06);
+    margin: 0.5rem 0;
 }
 
-.receipt-items {
-    margin: 0.75rem 0;
+.customer-name-display {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 200, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 200, 255, 0.05);
+}
+
+.customer-name-display span {
+    display: block;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.customer-name-display strong {
+    font-size: 1rem;
+    color: #fff;
+}
+
+.receipt-table-header {
+    display: grid;
+    grid-template-columns: 2fr 0.8fr 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .receipt-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.25rem 0;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.8);
+    display: grid;
+    grid-template-columns: 2fr 0.8fr 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.receipt-item .item-name {
+    font-weight: 500;
+    color: #fff;
+}
+
+.receipt-item .item-qty {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.receipt-item .item-price {
+    text-align: left;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.receipt-item .item-total {
+    text-align: left;
+    font-weight: 600;
+    color: #00c8ff;
 }
 
 .receipt-total {
     display: flex;
     justify-content: space-between;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: #fff;
-    padding: 0.5rem 0;
+    padding: 0.75rem 0;
+    border-top: 2px solid rgba(0, 200, 255, 0.1);
+}
+
+.receipt-total span:last-child {
+    color: #00ff96;
 }
 
 .receipt-footer {
     text-align: center;
-    color: rgba(255, 255, 255, 0.2);
-    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.15);
+    font-size: 0.75rem;
     margin-top: 1rem;
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+/* ===== 29. INVOICE TYPE SELECTION ===== */
+.invoice-type-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.invoice-type-section label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.invoice-type-options {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.invoice-type-btn {
+    flex: 1;
+    padding: 0.6rem 0.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.invoice-type-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.invoice-type-btn.active {
+    background: rgba(0, 200, 255, 0.1);
+    border-color: #00c8ff;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0, 200, 255, 0.05);
+}
+
+.invoice-type-btn.active i {
+    color: #00c8ff;
+}
+
+.invoice-type-btn i {
+    font-size: 1.2rem;
+    margin-bottom: 0.2rem;
+}
+
+.invoice-type-btn span {
+    display: block;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.invoice-type-btn .sub-text {
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 400;
+}
+
+/* ===== 30. INVOICE FILTERS ===== */
+.invoice-filters {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.invoice-filters .search-box {
+    min-width: 150px;
+}
+
+.invoice-filters .filter-select {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+}
+
+.invoice-filters .btn-secondary {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+/* ===== 31. CUSTOMER NAME FIELD ===== */
+.customer-name-field {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.customer-name-field:focus-within {
+    border-color: rgba(0, 200, 255, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.customer-name-field label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.customer-name-field .customer-input {
+    width: 100%;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    padding: 0.25rem 0;
+}
+
+.customer-name-field .customer-input::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: 400;
+}
+
+.customer-name-field .clear-btn {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.customer-name-field .clear-btn:hover {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ===== 32. BACKUP SECTION ===== */
+.backup-section {
+    margin-top: 0.5rem;
+}
+
+.backup-section .btn-primary,
+.backup-section .btn-secondary {
+    width: 100%;
+    justify-content: center;
+}
+
+/* ===== 33. RECEIPT PRINT ===== */
+.receipt-print {
+    font-family: 'Arial', sans-serif;
+    direction: rtl;
+    max-width: 500px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.receipt-print .receipt-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.receipt-print .receipt-header h2 {
+    font-size: 22px;
+    color: #0077b6;
+    margin-bottom: 5px;
+}
+
+.receipt-print .receipt-header p {
+    font-size: 16px;
+    color: #555;
+    margin: 5px 0;
+}
+
+.receipt-print .receipt-header small {
+    display: block;
+    color: #999;
+    font-size: 12px;
+}
+
+.receipt-print .customer-line {
+    margin-top: 10px;
+    padding: 8px;
+    background: #f5f9ff;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.receipt-print .customer-line strong {
+    color: #0077b6;
+}
+
+.receipt-print .receipt-divider {
+    border-top: 2px dashed #ddd;
+    margin: 15px 0;
+}
+
+.receipt-print .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.receipt-print .receipt-table th {
+    background: #f0f4f8;
+    padding: 8px 10px;
+    text-align: right;
+    font-weight: 700;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.receipt-print .receipt-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.receipt-print .receipt-table tr:last-child td {
+    border-bottom: none;
+}
+
+.receipt-print .receipt-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 15px 0 10px;
+    border-top: 2px solid #0077b6;
+    margin-top: 10px;
+}
+
+.receipt-print .receipt-total span:last-child {
+    color: #0077b6;
+    font-size: 20px;
+}
+
+.receipt-print .receipt-footer {
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+/* ===== 34. RESPONSIVE ===== */
 @media (max-width: 1024px) {
     .pos-grid {
         grid-template-columns: 1fr 320px;
@@ -2323,316 +2671,194 @@ td.negative {
         padding: 0.85rem;
     }
 }
-
 /* ============================================================
-   CUSTOMER NAME FIELD
+   PRINT RECEIPT - طباعة احترافية
    ============================================================ */
-.customer-name-field {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+
+.receipt-print {
+    font-family: 'Arial', 'Tahoma', sans-serif;
+    direction: rtl;
+    max-width: 380px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 25px 20px;
+    border: 2px solid #1a1a2e;
     border-radius: 12px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    position: relative;
-    transition: all 0.3s ease;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
-.customer-name-field:focus-within {
-    border-color: rgba(0, 200, 255, 0.3);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.customer-name-field label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.25rem;
-}
-
-.customer-name-field .customer-input {
-    width: 100%;
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 500;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    padding: 0.25rem 0;
-}
-
-.customer-name-field .customer-input::placeholder {
-    color: rgba(255, 255, 255, 0.2);
-    font-weight: 400;
-}
-
-.customer-name-field .clear-btn {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-}
-
-.customer-name-field .clear-btn:hover {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-/* ============================================================
-   INVOICE FILTERS
-   ============================================================ */
-.invoice-filters {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.invoice-filters .search-box {
-    min-width: 150px;
-}
-
-.invoice-filters .filter-select {
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    outline: none;
-}
-
-.invoice-filters .btn-secondary {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-}
-
-/* ============================================================
-   INVOICE TYPE SELECTION
-   ============================================================ */
-.invoice-type-section {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-}
-
-.invoice-type-section label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.5rem;
-}
-
-.invoice-type-options {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.invoice-type-btn {
-    flex: 1;
-    padding: 0.6rem 0.5rem;
-    border: 2px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.02);
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.8rem;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
+.receipt-print .receipt-header {
     text-align: center;
-    line-height: 1.3;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px dashed #e0e0e0;
 }
 
-.invoice-type-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.invoice-type-btn.active {
-    background: rgba(0, 200, 255, 0.1);
-    border-color: #00c8ff;
-    color: #fff;
-    box-shadow: 0 0 20px rgba(0, 200, 255, 0.05);
-}
-
-.invoice-type-btn.active i {
-    color: #00c8ff;
-}
-
-.invoice-type-btn i {
-    font-size: 1.2rem;
-    margin-bottom: 0.2rem;
-}
-
-.invoice-type-btn span {
-    display: block;
-    font-weight: 600;
-    font-size: 0.8rem;
-}
-
-.invoice-type-btn .sub-text {
-    font-size: 0.55rem;
-    color: rgba(255, 255, 255, 0.3);
-    font-weight: 400;
-}
-
-/* ============================================================
-   RECEIPT - فاتورة مبدئية
-   ============================================================ */
-.receipt-header h2 {
-    font-size: 1.3rem;
+.receipt-print .receipt-header h2 {
+    font-size: 22px;
     font-weight: 800;
-    color: #fff;
-    margin: 0;
+    color: #0077b6;
+    margin: 0 0 5px;
+    letter-spacing: 1px;
 }
 
-.receipt-header p {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.9rem;
-    margin: 0.15rem 0;
+.receipt-print .receipt-header p {
+    font-size: 14px;
+    color: #555;
+    margin: 3px 0;
 }
 
-.receipt-header small {
+.receipt-print .receipt-header small {
     display: block;
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 0.75rem;
+    font-size: 11px;
+    color: #999;
 }
 
-.customer-name-display {
-    margin-top: 0.5rem;
-    padding: 0.5rem;
-    background: rgba(0, 200, 255, 0.05);
+.receipt-print .customer-line {
+    margin: 12px 0 8px;
+    padding: 8px 12px;
+    background: #f0f7ff;
     border-radius: 8px;
-    border: 1px solid rgba(0, 200, 255, 0.05);
+    border-right: 4px solid #0077b6;
+    font-size: 14px;
 }
 
-.customer-name-display span {
-    display: block;
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.3);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.receipt-print .customer-line strong {
+    color: #0077b6;
 }
 
-.customer-name-display strong {
-    font-size: 1rem;
-    color: #fff;
+.receipt-print .receipt-divider {
+    border-top: 2px dashed #ddd;
+    margin: 12px 0;
 }
 
-.receipt-table-header {
-    display: grid;
-    grid-template-columns: 2fr 0.8fr 1fr 1fr;
-    gap: 0.5rem;
-    padding: 0.3rem 0;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.3);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.receipt-print .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 13px;
 }
 
-.receipt-item {
-    display: grid;
-    grid-template-columns: 2fr 0.8fr 1fr 1fr;
-    gap: 0.5rem;
-    padding: 0.4rem 0;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.85);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.receipt-item .item-name {
-    font-weight: 500;
-    color: #fff;
-}
-
-.receipt-item .item-qty {
+.receipt-print .receipt-table th {
+    background: #f5f5f5;
+    padding: 8px 6px;
     text-align: center;
-    color: rgba(255, 255, 255, 0.6);
+    font-weight: 700;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+    font-size: 12px;
 }
 
-.receipt-item .item-price {
-    text-align: left;
-    color: rgba(255, 255, 255, 0.6);
+.receipt-print .receipt-table td {
+    padding: 7px 6px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    color: #444;
 }
 
-.receipt-item .item-total {
-    text-align: left;
-    font-weight: 600;
-    color: #00c8ff;
+.receipt-print .receipt-table td:first-child {
+    text-align: right;
+    font-weight: 500;
 }
 
-.receipt-total {
+.receipt-print .receipt-table td:last-child {
+    font-weight: 700;
+    color: #0077b6;
+}
+
+.receipt-print .receipt-total {
     display: flex;
     justify-content: space-between;
-    font-size: 1.2rem;
+    align-items: center;
+    font-size: 18px;
     font-weight: 700;
-    color: #fff;
-    padding: 0.75rem 0;
-    border-top: 2px solid rgba(0, 200, 255, 0.1);
+    padding: 15px 0 10px;
+    margin-top: 10px;
+    border-top: 3px double #0077b6;
 }
 
-.receipt-total span:last-child {
-    color: #00ff96;
+.receipt-print .receipt-total span:last-child {
+    color: #0077b6;
+    font-size: 22px;
 }
 
-.receipt-footer {
+.receipt-print .receipt-footer {
     text-align: center;
-    color: rgba(255, 255, 255, 0.15);
-    font-size: 0.75rem;
-    margin-top: 1rem;
+    color: #999;
+    font-size: 11px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
 }
 
-.receipt-divider {
-    border-top: 1px dashed rgba(255, 255, 255, 0.06);
-    margin: 0.5rem 0;
+.print-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    background: #0077b6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.print-btn:hover {
+    background: #005a8c;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 119, 182, 0.3);
+}
+
+@media print {
+    body {
+        background: white !important;
+        padding: 10px !important;
+        margin: 0 !important;
+    }
+    
+    .receipt-print {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        padding: 20px !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+    }
+    
+    .receipt-print .receipt-table th {
+        background: #f0f0f0 !important;
+    }
+    
+    .print-btn {
+        display: none !important;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
 }
 
 @media (max-width: 480px) {
-    .receipt-table-header,
-    .receipt-item {
-        grid-template-columns: 1.5fr 0.6fr 0.8fr 0.8fr;
-        font-size: 0.75rem;
-        gap: 0.3rem;
+    .receipt-print {
+        padding: 15px;
     }
     
-    .receipt-item .item-name {
-        font-size: 0.8rem;
+    .receipt-print .receipt-total {
+        font-size: 16px;
     }
     
-    .receipt-total {
-        font-size: 1rem;
+    .receipt-print .receipt-total span:last-child {
+        font-size: 18px;
     }
-}
-
-/* ===== BACKUP SECTION ===== */
-.backup-section {
-    margin-top: 0.5rem;
-}
-
-.backup-section .btn-primary,
-.backup-section .btn-secondary {
-    width: 100%;
-    justify-content: center;
+    
+    .receipt-print .receipt-table {
+        font-size: 12px;
+    }
+    
+    .receipt-print .receipt-table th,
+    .receipt-print .receipt-table td {
+        padding: 5px 4px;
+    }
 }
