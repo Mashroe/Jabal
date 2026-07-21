@@ -5,9 +5,6 @@
 let currentProducts = [];
 let deleteProductId = null;
 
-// ============================================================
-// HELPER: التحقق من وجود offlineManager
-// ============================================================
 function isOfflineManagerReady() {
     return typeof offlineManager !== 'undefined' && offlineManager !== null;
 }
@@ -20,7 +17,7 @@ async function loadProducts() {
         if (navigator.onLine) {
             const { data, error } = await supabaseClient
                 .from('products')
-                .select('*')
+                .select('id, name, price, quantity, created_at')
                 .order('created_at', { ascending: false });
             
             if (error) {
@@ -28,7 +25,7 @@ async function loadProducts() {
                 throw error;
             }
             products = data || [];
-            console.log(`✅ Loaded ${products.length} products from Supabase`);
+            console.log(`✅ Loaded ${products.length} products`);
             
             if (isOfflineManagerReady() && products.length > 0) {
                 await offlineManager.saveToLocalDB('products', products);
@@ -39,12 +36,7 @@ async function loadProducts() {
             if (products.length > 0) {
                 showToast('📴 عرض المنتجات من الذاكرة المحلية', 'info');
             }
-        } else {
-            console.warn('⚠️ Offline Manager not available');
         }
-        
-        // حفظ في localStorage للاستخدام في مكان آخر
-        localStorage.setItem('currentProducts', JSON.stringify(products));
         
         currentProducts = products;
         renderProducts(currentProducts);
@@ -76,15 +68,12 @@ function renderProducts(products) {
     if (tableContainer) tableContainer.style.display = 'block';
     
     tbody.innerHTML = products.map((product, index) => {
-        const status = getProductStatus(product.quantity);
-        const statusBadge = getStatusBadge(status);
         return `
             <tr>
                 <td>${index + 1}</td>
                 <td><strong>${escapeHtml(product.name)}</strong></td>
                 <td>${formatCurrency(product.price)}</td>
                 <td>${product.quantity}</td>
-                <td>${statusBadge}</td>
                 <td>
                     <button class="action-btn edit-btn" onclick="editProduct('${product.id}')">
                         <i class="fas fa-edit"></i>
@@ -98,36 +87,13 @@ function renderProducts(products) {
     }).join('');
 }
 
-function getProductStatus(quantity) {
-    if (quantity <= 0) return 'out_of_stock';
-    if (quantity <= 5) return 'low_stock';
-    return 'in_stock';
-}
-
-function getStatusBadge(status) {
-    const badges = {
-        'in_stock': '<span class="badge badge-success">متوفر</span>',
-        'low_stock': '<span class="badge badge-warning">منخفض</span>',
-        'out_of_stock': '<span class="badge badge-danger">نفذ</span>'
-    };
-    return badges[status] || badges['in_stock'];
-}
-
 document.getElementById('searchInput')?.addEventListener('input', function() { filterProducts(); });
-document.getElementById('filterStock')?.addEventListener('change', function() { filterProducts(); });
 
 function filterProducts() {
     const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
-    const filterValue = document.getElementById('filterStock')?.value || 'all';
     let filtered = currentProducts || [];
     if (searchTerm) {
         filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm));
-    }
-    if (filterValue !== 'all') {
-        filtered = filtered.filter(p => {
-            const status = getProductStatus(p.quantity);
-            return status === filterValue;
-        });
     }
     renderProducts(filtered);
 }
@@ -158,7 +124,7 @@ document.getElementById('productForm')?.addEventListener('submit', async functio
     const id = document.getElementById('productId').value;
     const name = document.getElementById('productName').value.trim();
     const price = parseFloat(document.getElementById('productPrice').value);
-    const quantity = parseInt(document.getElementById('productQuantity').value);
+    const quantity = parseInt(document.getElementById('productQuantity').value) || 0;
     
     if (!name) {
         showToast('يرجى إدخال اسم المنتج', 'error');
@@ -168,7 +134,7 @@ document.getElementById('productForm')?.addEventListener('submit', async functio
         showToast('يرجى إدخال سعر صحيح', 'error');
         return;
     }
-    if (isNaN(quantity) || quantity < 0) {
+    if (quantity < 0) {
         showToast('يرجى إدخال كمية صحيحة', 'error');
         return;
     }
