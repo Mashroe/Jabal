@@ -20,7 +20,7 @@ function selectInvoiceType(type) {
         }
     });
     
-    console.log('📄 Invoice type:', type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)');
+    console.log('📄 Invoice type:', type === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية');
 }
 
 async function loadPOSProducts() {
@@ -268,8 +268,8 @@ function showReceiptPreview(sale, items, total, type = 'final') {
     const customerName = sale.customer_name || 'عميل';
     const customerTitle = `السيد/ ${customerName}`;
     
-    const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
-    const invoiceStatus = '📄 معاينة - غير معتمدة';
+    const invoiceTitle = type === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
+    const invoiceStatus = '📄 معاينة';
     
     if (body) {
         body.innerHTML = `
@@ -281,7 +281,6 @@ function showReceiptPreview(sale, items, total, type = 'final') {
                     <small>التاريخ: ${date}</small>
                     <small style="color: #ffc800;">${invoiceStatus}</small>
                     <div class="customer-name-display">
-                        <span>👤 العميل</span>
                         <strong>${escapeHtml(customerTitle)}</strong>
                     </div>
                 </div>
@@ -379,7 +378,7 @@ async function checkout() {
         const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
         console.log('👤 Customer Name:', customerName);
         
-        const invoiceTypeLabel = invoiceType === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+        const invoiceTypeLabel = invoiceType === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
         console.log('📄 Invoice Type:', invoiceTypeLabel);
         
         const sale = {
@@ -490,8 +489,8 @@ function showReceipt(sale, items, total, type = 'final') {
     const customerName = sale.customer_name || 'عميل';
     const customerTitle = `السيد/ ${customerName}`;
     
-    const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
-    const invoiceStatus = type === 'final' ? '✅ معتمدة' : '⏳ مسودة - غير معتمدة';
+    const invoiceTitle = type === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
+    const invoiceStatus = type === 'final' ? '✅ معتمدة' : '⏳ غير معتمدة';
     
     if (body) {
         body.innerHTML = `
@@ -503,21 +502,17 @@ function showReceipt(sale, items, total, type = 'final') {
                     <small>التاريخ: ${date}</small>
                     <small>الحالة: ${invoiceStatus}</small>
                     <div class="customer-name-display">
-                        <span>👤 العميل</span>
                         <strong>${escapeHtml(customerTitle)}</strong>
                     </div>
                 </div>
                 <div class="receipt-divider"></div>
-                
                 <div class="receipt-table-header">
                     <span>الصنف</span>
                     <span>الكمية</span>
                     <span>السعر</span>
                     <span>الإجمالي</span>
                 </div>
-                
                 <div class="receipt-divider"></div>
-                
                 <div class="receipt-items">
                     ${items.map(item => `
                         <div class="receipt-item">
@@ -528,18 +523,15 @@ function showReceipt(sale, items, total, type = 'final') {
                         </div>
                     `).join('')}
                 </div>
-                
                 <div class="receipt-divider"></div>
-                
                 <div class="receipt-total">
                     <span>المجموع الكلي</span>
                     <span>${formatCurrency(total)}</span>
                 </div>
-                
                 <div class="receipt-footer">
-                    ${type === 'final' 
-                        ? '<small>شكراً لتسوقكم معنا</small>' 
-                        : '<small>⚠️ هذه فاتورة مبدئية غير معتمدة</small>'}
+                    <small>📞 للتواصل: 0129321654 - 0922500501</small>
+                    <br>
+                    <small>شكراً لتسوقكم معنا</small>
                 </div>
             </div>
         `;
@@ -582,14 +574,14 @@ function sendReceiptWhatsApp() {
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
     const customerName = sale.customer_name || 'عميل';
     const type = sale.invoice_type || 'final';
-    const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+    const invoiceTitle = type === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
     const customerTitle = `السيد/ ${customerName}`;
     
     let message = '🏷️ *JABAL ALSAFA*\n';
     message += '━'.repeat(30) + '\n';
     message += `📋 ${invoiceTitle}\n`;
     message += `📅 التاريخ: ${date}\n`;
-    message += `👤 العميل: ${customerTitle}\n`;
+    message += `👤 ${customerTitle}\n`;
     message += '━'.repeat(30) + '\n\n';
     message += '*المنتجات:*\n';
     
