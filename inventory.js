@@ -152,7 +152,7 @@ function editInventoryItem(id) {
 }
 
 // ============================================================
-// حفظ المخزون
+// حفظ المخزون (مصحح)
 // ============================================================
 document.getElementById('inventoryForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -162,6 +162,7 @@ document.getElementById('inventoryForm')?.addEventListener('submit', async funct
     const quantity = parseInt(document.getElementById('inventoryQuantity').value);
     const price = parseFloat(document.getElementById('inventoryPrice').value) || 0;
     
+    // ===== التحقق من البيانات =====
     if (!productName) {
         showToast('يرجى إدخال اسم المنتج', 'error');
         return;
@@ -172,32 +173,39 @@ document.getElementById('inventoryForm')?.addEventListener('submit', async funct
     }
     
     try {
+        // ===== جاهزية البيانات للإرسال =====
+        const dataToSend = {
+            product_name: productName,
+            quantity: quantity,
+            price: price,
+            updated_at: new Date().toISOString()
+        };
+        
+        console.log('📤 Sending data:', dataToSend);
+        
         if (id) {
-            // تعديل
+            // ===== تعديل =====
             const { error } = await supabaseClient
                 .from('inventory')
-                .update({ 
-                    product_name: productName, 
-                    quantity: quantity,
-                    price: price,
-                    updated_at: new Date().toISOString()
-                })
+                .update(dataToSend)
                 .eq('id', id);
             
-            if (error) throw error;
+            if (error) {
+                console.error('Update error:', error);
+                throw error;
+            }
             showToast('✅ تم تحديث المخزون بنجاح', 'success');
             
         } else {
-            // إضافة
+            // ===== إضافة جديدة =====
             const { error } = await supabaseClient
                 .from('inventory')
-                .insert([{ 
-                    product_name: productName, 
-                    quantity: quantity,
-                    price: price
-                }]);
+                .insert([dataToSend]);
             
-            if (error) throw error;
+            if (error) {
+                console.error('Insert error:', error);
+                throw error;
+            }
             showToast('✅ تم إضافة المخزون بنجاح', 'success');
         }
         
@@ -205,8 +213,8 @@ document.getElementById('inventoryForm')?.addEventListener('submit', async funct
         await loadInventoryData();
         
     } catch (error) {
-        console.error('Error saving inventory:', error);
-        showToast('حدث خطأ في حفظ المخزون', 'error');
+        console.error('❌ Error saving inventory:', error);
+        showToast('⚠️ حدث خطأ في حفظ المخزون: ' + (error.message || 'غير معروف'), 'error');
     }
 });
 
