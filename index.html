@@ -68,6 +68,19 @@
                 <i class="fas fa-trash-alt"></i>
                 <span>🗑️ إعادة تعيين كامل</span>
             </button>
+            
+            <!-- ===== BACKUP & RESTORE ===== -->
+            <div class="backup-section">
+                <button class="btn-primary" onclick="exportBackup()" style="width:100%; justify-content:center; margin-bottom:0.5rem;">
+                    <i class="fas fa-download"></i>
+                    💾 نسخة احتياطية
+                </button>
+                <button class="btn-secondary" onclick="document.getElementById('restoreInput').click()" style="width:100%; justify-content:center;">
+                    <i class="fas fa-upload"></i>
+                    📂 استعادة نسخة
+                </button>
+                <input type="file" id="restoreInput" accept=".json" style="display: none;" onchange="importBackup(event)" />
+            </div>
         </div>
     </aside>
 
@@ -151,7 +164,6 @@
                 </button>
             </div>
 
-            <!-- ===== PRODUCTS SECTION ===== -->
             <div id="productsSection" style="display: none;">
                 <div class="section-header">
                     <div class="section-header-left">
@@ -210,6 +222,11 @@
                 </div>
 
                 <div class="pos-cart">
+                    <div class="customer-name-field">
+                        <label for="customerName">👤 اسم العميل</label>
+                        <input type="text" id="customerName" placeholder="أدخل اسم العميل..." />
+                    </div>
+                    
                     <div class="cart-header">
                         <h3><i class="fas fa-shopping-basket"></i> سلة المشتريات</h3>
                         <span id="cartCount">0</span>
@@ -439,10 +456,34 @@
                     <h3>📄 إدارة الفواتير</h3>
                     <span class="products-count" id="invoicesCount">0 فاتورة</span>
                 </div>
-                <div class="search-box" style="max-width: 300px;">
+            </div>
+
+            <div class="invoice-filters">
+                <div class="search-box" style="flex: 2;">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="invoiceSearchInput" placeholder="بحث عن فاتورة..." oninput="searchInvoice()" />
+                    <input type="text" id="invoiceSearchInput" placeholder="بحث برقم الفاتورة، اسم العميل، أو المنتج..." oninput="searchInvoice()" />
                 </div>
+                <div class="search-box" style="flex: 1;">
+                    <i class="fas fa-calendar"></i>
+                    <input type="date" id="invoiceDateFilter" onchange="searchInvoice()" />
+                </div>
+                <select id="invoiceStatusFilter" class="filter-select" onchange="searchInvoice()" style="min-width: 120px;">
+                    <option value="all">جميع الحالات</option>
+                    <option value="completed">مكتملة</option>
+                    <option value="cancelled">ملغية</option>
+                </select>
+                <button class="btn-secondary" onclick="filterTodayInvoices()">
+                    <i class="fas fa-calendar-day"></i>
+                    اليوم
+                </button>
+                <button class="btn-secondary" onclick="filterThisMonthInvoices()">
+                    <i class="fas fa-calendar-alt"></i>
+                    هذا الشهر
+                </button>
+                <button class="btn-secondary" onclick="loadInvoices()">
+                    <i class="fas fa-sync"></i>
+                    الكل
+                </button>
             </div>
 
             <div class="table-container">
@@ -452,6 +493,7 @@
                             <th>#</th>
                             <th>رقم الفاتورة</th>
                             <th>التاريخ</th>
+                            <th>العميل</th>
                             <th>عدد المنتجات</th>
                             <th>الإجمالي</th>
                             <th>الحالة</th>
@@ -533,7 +575,6 @@
                 </div>
             </div>
 
-            <!-- ===== CHARTS SECTION ===== -->
             <div class="charts-grid">
                 <div class="chart-card">
                     <div class="chart-card-header">
@@ -560,7 +601,6 @@
                 </div>
             </div>
 
-            <!-- ===== EXPORT SECTION ===== -->
             <div class="export-section">
                 <div class="export-section-header">
                     <h4>📤 تصدير البيانات</h4>
@@ -597,7 +637,6 @@
     </main>
 
     <!-- ===== MODALS ===== -->
-    <!-- Modal: Add Stock -->
     <div class="modal" id="stockModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -633,7 +672,6 @@
         </div>
     </div>
 
-    <!-- Modal: Receipt -->
     <div class="modal" id="receiptModal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
@@ -655,7 +693,6 @@
         </div>
     </div>
 
-    <!-- Modal: Add/Edit Product -->
     <div class="modal" id="productModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -687,7 +724,6 @@
         </div>
     </div>
 
-    <!-- Modal: Confirm Delete -->
     <div class="modal" id="deleteModal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
@@ -708,7 +744,6 @@
         </div>
     </div>
 
-    <!-- Modal: Customer -->
     <div class="modal" id="customerModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -744,7 +779,6 @@
         </div>
     </div>
 
-    <!-- Modal: Customer History -->
     <div class="modal" id="customerHistoryModal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
@@ -758,7 +792,6 @@
         </div>
     </div>
 
-    <!-- Modal: Purchase -->
     <div class="modal" id="purchaseModal">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
@@ -827,7 +860,6 @@
         </div>
     </div>
 
-    <!-- Modal: Purchase Detail -->
     <div class="modal" id="purchaseDetailModal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
@@ -841,7 +873,6 @@
         </div>
     </div>
 
-    <!-- Modal: Invoice Detail -->
     <div class="modal" id="invoiceDetailModal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
