@@ -169,7 +169,6 @@ window.resetSystem = async function() {
     try {
         showToast('⏳ جاري إعادة تعيين النظام...', 'warning');
         
-        // مسح Supabase
         if (typeof supabaseClient !== 'undefined') {
             const tables = ['sale_items', 'sales', 'purchase_items', 'purchases', 'counting_items', 'counting_sessions', 'stock_movements', 'customers', 'products'];
             for (const table of tables) {
@@ -180,7 +179,6 @@ window.resetSystem = async function() {
             }
         }
         
-        // مسح IndexedDB
         if (offlineManager && offlineManager.db) {
             const stores = ['products', 'sales', 'sale_items', 'stock_movements', 'pending_operations', 'counting_sessions', 'counting_items', 'customers', 'purchases', 'purchase_items'];
             for (const store of stores) {
@@ -202,6 +200,122 @@ window.resetSystem = async function() {
 };
 
 // ============================================================
+// BACKUP & RESTORE
+// ============================================================
+
+// ============================================================
+// تصدير النسخة الاحتياطية
+// ============================================================
+async function exportBackup() {
+    try {
+        showToast('⏳ جاري تحضير النسخة الاحتياطية...', 'info');
+        
+        const tables = ['products', 'sales', 'sale_items', 'customers', 'inventory', 'purchases', 'purchase_items', 'stock_movements'];
+        const backupData = {};
+        
+        for (const table of tables) {
+            const { data, error } = await supabaseClient
+                .from(table)
+                .select('*');
+            
+            if (error) {
+                console.warn(`⚠️ Could not fetch ${table}:`, error);
+                backupData[table] = [];
+            } else {
+                backupData[table] = data || [];
+            }
+        }
+        
+        backupData._meta = {
+            version: APP_CONFIG.app.version,
+            date: new Date().toISOString(),
+            tables: tables
+        };
+        
+        const json = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        showToast('✅ تم تحميل النسخة الاحتياطية بنجاح', 'success');
+        
+    } catch (error) {
+        console.error('Error exporting backup:', error);
+        showToast('❌ حدث خطأ في تحميل النسخة الاحتياطية', 'error');
+    }
+}
+
+// ============================================================
+// استعادة النسخة الاحتياطية
+// ============================================================
+async function importBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!confirm('⚠️ هل أنت متأكد من استعادة النسخة الاحتياطية؟\nسيتم استبدال جميع البيانات الحالية!')) {
+        return;
+    }
+    
+    try {
+        showToast('⏳ جاري قراءة الملف...', 'info');
+        
+        const text = await file.text();
+        const backupData = JSON.parse(text);
+        
+        if (!backupData._meta || !backupData._meta.version) {
+            showToast('❌ هذا الملف ليس نسخة احتياطية صالحة', 'error');
+            return;
+        }
+        
+        showToast('⏳ جاري استعادة البيانات...', 'info');
+        
+        const tables = ['products', 'sales', 'sale_items', 'customers', 'inventory', 'purchases', 'purchase_items', 'stock_movements'];
+        
+        for (const table of tables) {
+            if (backupData[table] && backupData[table].length > 0) {
+                await supabaseClient
+                    .from(table)
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                
+                const { error } = await supabaseClient
+                    .from(table)
+                    .insert(backupData[table]);
+                
+                if (error) {
+                    console.warn(`⚠️ Could not restore ${table}:`, error);
+                } else {
+                    console.log(`✅ Restored ${table}: ${backupData[table].length} rows`);
+                }
+            }
+        }
+        
+        showToast('✅ تم استعادة النسخة الاحتياطية بنجاح! جاري تحديث الصفحة...', 'success');
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error importing backup:', error);
+        showToast('❌ حدث خطأ في استعادة النسخة الاحتياطية', 'error');
+    }
+    
+    event.target.value = '';
+}
+
+// ============================================================
+// EXPORT BACKUP FUNCTIONS
+// ============================================================
+window.exportBackup = exportBackup;
+window.importBackup = importBackup;
+
+// ============================================================
 // EVENT LISTENERS
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -218,7 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
         window.resetSystem();
     });
     
-    // عرض البريد الإلكتروني
     const userEmail = localStorage.getItem('jabal_email') || 'مدير النظام';
     const emailEl = document.getElementById('userEmail');
     if (emailEl) emailEl.textContent = userEmail;
