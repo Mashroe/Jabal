@@ -1,5 +1,5 @@
 // ============================================================
-// INVENTORY MANAGEMENT (مخزون منفصل تماماً)
+// INVENTORY MANAGEMENT (مخزون منفصل تماماً مع السحب)
 // ============================================================
 
 let inventoryItems = [];
@@ -133,6 +133,7 @@ function openAddInventoryModal() {
     document.getElementById('inventoryModalTitle').textContent = '➕ إضافة مخزون جديد';
     document.getElementById('inventoryForm').reset();
     document.getElementById('inventoryId').value = '';
+    document.getElementById('inventoryType').value = 'in';
     document.getElementById('inventoryModal').classList.add('active');
 }
 
@@ -148,11 +149,12 @@ function editInventoryItem(id) {
     document.getElementById('inventoryName').value = item.product_name;
     document.getElementById('inventoryQuantity').value = item.quantity;
     document.getElementById('inventoryPrice').value = item.price || 0;
+    document.getElementById('inventoryType').value = 'in';
     document.getElementById('inventoryModal').classList.add('active');
 }
 
 // ============================================================
-// حفظ المخزون (مصحح)
+// حفظ المخزون (مع إضافة السحب)
 // ============================================================
 document.getElementById('inventoryForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -161,6 +163,7 @@ document.getElementById('inventoryForm')?.addEventListener('submit', async funct
     const productName = document.getElementById('inventoryName').value.trim();
     const quantity = parseInt(document.getElementById('inventoryQuantity').value);
     const price = parseFloat(document.getElementById('inventoryPrice').value) || 0;
+    const type = document.getElementById('inventoryType').value;
     
     // ===== التحقق من البيانات =====
     if (!productName) {
@@ -173,39 +176,60 @@ document.getElementById('inventoryForm')?.addEventListener('submit', async funct
     }
     
     try {
-        // ===== جاهزية البيانات للإرسال =====
         const dataToSend = {
             product_name: productName,
-            quantity: quantity,
             price: price,
             updated_at: new Date().toISOString()
         };
         
-        console.log('📤 Sending data:', dataToSend);
-        
         if (id) {
             // ===== تعديل =====
+            const { data: currentItem } = await supabaseClient
+                .from('inventory')
+                .select('quantity')
+                .eq('id', id)
+                .single();
+            
+            if (!currentItem) {
+                showToast('العنصر غير موجود', 'error');
+                return;
+            }
+            
+            let newQuantity;
+            if (type === 'in') {
+                newQuantity = currentItem.quantity + quantity;
+            } else {
+                newQuantity = currentItem.quantity - quantity;
+                if (newQuantity < 0) {
+                    showToast(`⚠️ الكمية المطلوبة للسحب (${quantity}) غير متوفرة - المتوفر: ${currentItem.quantity}`, 'error');
+                    return;
+                }
+            }
+            
+            dataToSend.quantity = newQuantity;
+            
             const { error } = await supabaseClient
                 .from('inventory')
                 .update(dataToSend)
                 .eq('id', id);
             
-            if (error) {
-                console.error('Update error:', error);
-                throw error;
-            }
-            showToast('✅ تم تحديث المخزون بنجاح', 'success');
+            if (error) throw error;
+            showToast(`✅ تم ${type === 'in' ? 'إضافة' : 'سحب'} المخزون بنجاح`, 'success');
             
         } else {
             // ===== إضافة جديدة =====
+            if (type === 'out') {
+                showToast('⚠️ لا يمكن سحب من منتج غير موجود في المخزون', 'error');
+                return;
+            }
+            
+            dataToSend.quantity = quantity;
+            
             const { error } = await supabaseClient
                 .from('inventory')
                 .insert([dataToSend]);
             
-            if (error) {
-                console.error('Insert error:', error);
-                throw error;
-            }
+            if (error) throw error;
             showToast('✅ تم إضافة المخزون بنجاح', 'success');
         }
         
