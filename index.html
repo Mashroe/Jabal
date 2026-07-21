@@ -151,6 +151,7 @@
                 </button>
             </div>
 
+            <!-- ===== PRODUCTS SECTION ===== -->
             <div id="productsSection" style="display: none;">
                 <div class="section-header">
                     <div class="section-header-left">
@@ -177,6 +178,7 @@
                                 <th>#</th>
                                 <th>اسم المنتج</th>
                                 <th>السعر (SDG)</th>
+                                <th>الكمية</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
@@ -247,73 +249,32 @@
             </div>
         </section>
 
-        <!-- ===== INVENTORY PAGE ===== -->
+        <!-- ===== INVENTORY PAGE (مخزون منفصل) ===== -->
         <section class="page-content" id="inventoryContent" style="display: none;">
             <div class="inventory-controls">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="inventorySearch" placeholder="بحث عن منتج..." />
+                    <input type="text" id="inventorySearch" placeholder="بحث عن منتج في المخزون..." />
                 </div>
-                <button class="btn-primary" id="addStockBtn">
+                <button class="btn-primary" id="addInventoryBtn">
                     <i class="fas fa-plus"></i>
                     إضافة مخزون
                 </button>
             </div>
 
-            <div class="inventory-tabs">
-                <button class="tab-btn active" data-tab="current">المخزون الحالي</button>
-                <button class="tab-btn" data-tab="movements">سجل الحركات</button>
-                <button class="tab-btn" data-tab="alerts">تنبيهات المخزون</button>
-            </div>
-
-            <div class="tab-content active" id="currentStockTab">
-                <div class="table-container">
-                    <table class="products-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>اسم المنتج</th>
-                                <th>الكمية</th>
-                                <th>السعر (SDG)</th>
-                                <th>الإجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-content" id="movementsTab" style="display: none;">
-                <div class="movements-filters">
-                    <input type="date" id="movementDateFrom" />
-                    <input type="date" id="movementDateTo" />
-                    <select id="movementType">
-                        <option value="all">جميع الحركات</option>
-                        <option value="in">إضافة</option>
-                        <option value="out">سحب</option>
-                    </select>
-                    <button class="btn-secondary" id="filterMovementsBtn">
-                        <i class="fas fa-filter"></i>
-                        تصفية
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table class="products-table">
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>المنتج</th>
-                                <th>النوع</th>
-                                <th>الكمية</th>
-                            </tr>
-                        </thead>
-                        <tbody id="movementsTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-content" id="alertsTab" style="display: none;">
-                <div id="alertsContainer"></div>
+            <div class="table-container">
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم المنتج</th>
+                            <th>الكمية</th>
+                            <th>السعر (SDG)</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                </table>
             </div>
         </section>
 
@@ -711,6 +672,10 @@
                     <label for="productPrice">السعر (SDG)</label>
                     <input type="number" id="productPrice" placeholder="0.00" step="0.01" required />
                 </div>
+                <div class="form-group">
+                    <label for="productQuantity">الكمية</label>
+                    <input type="number" id="productQuantity" placeholder="0" step="1" required />
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="cancelProductModal">إلغاء</button>
                     <button type="submit" class="btn-primary">
@@ -891,6 +856,38 @@
                 </button>
                 <button class="btn-primary" id="closeInvoiceDetailBtn">إغلاق</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: إضافة/تعديل مخزون منفصل ===== -->
+    <div class="modal" id="inventoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="inventoryModalTitle">➕ إضافة مخزون جديد</h3>
+                <button class="modal-close" onclick="closeInventoryModal()">&times;</button>
+            </div>
+            <form id="inventoryForm">
+                <input type="hidden" id="inventoryId" />
+                <div class="form-group">
+                    <label for="inventoryName">اسم المنتج</label>
+                    <input type="text" id="inventoryName" placeholder="أدخل اسم المنتج" required />
+                </div>
+                <div class="form-group">
+                    <label for="inventoryQuantity">الكمية</label>
+                    <input type="number" id="inventoryQuantity" placeholder="0" step="1" required />
+                </div>
+                <div class="form-group">
+                    <label for="inventoryPrice">السعر (SDG)</label>
+                    <input type="number" id="inventoryPrice" placeholder="0.00" step="0.01" />
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeInventoryModal()">إلغاء</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i>
+                        حفظ
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
