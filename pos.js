@@ -5,6 +5,23 @@
 let posProducts = [];
 let cart = [];
 let lastSaleData = null;
+let invoiceType = 'final'; // 'final' أو 'draft'
+
+// ============================================================
+// اختيار نوع الفاتورة
+// ============================================================
+function selectInvoiceType(type) {
+    invoiceType = type;
+    
+    document.querySelectorAll('.invoice-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.type === type) {
+            btn.classList.add('active');
+        }
+    });
+    
+    console.log('📄 Invoice type:', type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)');
+}
 
 async function loadPOSProducts() {
     try {
@@ -245,10 +262,15 @@ async function checkout() {
         const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
         console.log('👤 Customer Name:', customerName);
         
+        // ===== جلب نوع الفاتورة =====
+        const invoiceTypeLabel = invoiceType === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+        console.log('📄 Invoice Type:', invoiceTypeLabel);
+        
         const sale = {
             id: saleId,
             total: total,
             customer_name: customerName || 'عميل',
+            invoice_type: invoiceType,
             created_at: new Date().toISOString()
         };
         
@@ -330,7 +352,7 @@ async function checkout() {
         }
         
         // ===== عرض الفاتورة =====
-        showReceipt(sale, cart, total);
+        showReceipt(sale, cart, total, invoiceType);
         
         // ===== تنظيف السلة =====
         cart = [];
@@ -352,43 +374,69 @@ async function checkout() {
     }
 }
 
-function showReceipt(sale, items, total) {
+function showReceipt(sale, items, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
     const body = document.getElementById('receiptBody');
     const date = new Date(sale.created_at).toLocaleString('ar-SA');
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
     const customerName = sale.customer_name || 'عميل';
     
+    // تحديد لقب العميل
+    const customerTitle = customerName.startsWith('السيد') || customerName.startsWith('السيدة') 
+        ? customerName 
+        : `السيد/السيدة ${customerName}`;
+    
+    // عنوان الفاتورة حسب النوع
+    const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+    const invoiceStatus = type === 'final' ? '✅ معتمدة' : '⏳ مسودة - غير معتمدة';
+    
     if (body) {
         body.innerHTML = `
             <div class="receipt" id="receiptContent">
                 <div class="receipt-header">
                     <h2>🏷️ JABAL ALSAFA</h2>
-                    <p>فاتورة بيع</p>
+                    <p>${invoiceTitle}</p>
                     <small>رقم: #${receiptNumber}</small>
                     <small>التاريخ: ${date}</small>
+                    <small>الحالة: ${invoiceStatus}</small>
                     <div class="customer-name-display">
                         <span>👤 العميل</span>
-                        <strong>${escapeHtml(customerName)}</strong>
+                        <strong>${escapeHtml(customerTitle)}</strong>
                     </div>
                 </div>
                 <div class="receipt-divider"></div>
+                
+                <div class="receipt-table-header">
+                    <span>الصنف</span>
+                    <span>الكمية</span>
+                    <span>السعر</span>
+                    <span>الإجمالي</span>
+                </div>
+                
+                <div class="receipt-divider"></div>
+                
                 <div class="receipt-items">
                     ${items.map(item => `
                         <div class="receipt-item">
-                            <span>${escapeHtml(item.name || item.product_name || 'منتج')}</span>
-                            <span>${item.quantity} × ${formatCurrency(item.price)}</span>
-                            <span>${formatCurrency(item.price * item.quantity)}</span>
+                            <span class="item-name">${escapeHtml(item.name || item.product_name || 'منتج')}</span>
+                            <span class="item-qty">${item.quantity}</span>
+                            <span class="item-price">${formatCurrency(item.price)}</span>
+                            <span class="item-total">${formatCurrency(item.price * item.quantity)}</span>
                         </div>
                     `).join('')}
                 </div>
+                
                 <div class="receipt-divider"></div>
+                
                 <div class="receipt-total">
-                    <span>المجموع</span>
+                    <span>المجموع الكلي</span>
                     <span>${formatCurrency(total)}</span>
                 </div>
+                
                 <div class="receipt-footer">
-                    <small>شكراً لتسوقكم معنا</small>
+                    ${type === 'final' 
+                        ? '<small>شكراً لتسوقكم معنا</small>' 
+                        : '<small>⚠️ هذه فاتورة مبدئية غير معتمدة</small>'}
                 </div>
             </div>
         `;
@@ -430,10 +478,12 @@ function sendReceiptWhatsApp() {
     const date = new Date(sale.created_at).toLocaleString('ar-SA');
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
     const customerName = sale.customer_name || 'عميل';
+    const type = sale.invoice_type || 'final';
+    const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
     
     let message = '🏷️ *JABAL ALSAFA*\n';
     message += '━'.repeat(30) + '\n';
-    message += `📋 فاتورة: #${receiptNumber}\n`;
+    message += `📋 ${invoiceTitle}\n`;
     message += `📅 التاريخ: ${date}\n`;
     message += `👤 العميل: ${customerName}\n`;
     message += '━'.repeat(30) + '\n\n';
@@ -445,9 +495,9 @@ function sendReceiptWhatsApp() {
     });
     
     message += '\n' + '━'.repeat(30) + '\n';
-    message += `*المجموع: ${formatCurrency(total)}*\n`;
+    message += `*المجموع الكلي: ${formatCurrency(total)}*\n`;
     message += '━'.repeat(30) + '\n';
-    message += '_شكراً لتسوقكم معنا_';
+    message += type === 'final' ? '_شكراً لتسوقكم معنا_' : '_⚠️ فاتورة مبدئية غير معتمدة_';
     
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
@@ -524,5 +574,6 @@ window.checkout = checkout;
 window.printReceipt = printReceipt;
 window.sendReceiptWhatsApp = sendReceiptWhatsApp;
 window.loadPOSProducts = loadPOSProducts;
+window.selectInvoiceType = selectInvoiceType;
 
 console.log('✅ POS Module Loaded');
