@@ -381,10 +381,8 @@ function showReceipt(sale, items, total, type = 'final') {
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
     const customerName = sale.customer_name || 'عميل';
     
-    // تحديد لقب العميل
-    const customerTitle = customerName.startsWith('السيد') || customerName.startsWith('') 
-        ? customerName 
-        : `السيد/ ${customerName}`;
+    // ===== إضافة لقب "السيد" قبل اسم العميل =====
+    const customerTitle = `السيد ${customerName}`;
     
     // عنوان الفاتورة حسب النوع
     const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
@@ -477,15 +475,16 @@ function sendReceiptWhatsApp() {
     const { sale, items, total } = lastSaleData;
     const date = new Date(sale.created_at).toLocaleString('ar-SA');
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
-    const customerName = sale.customer_name || 'السيد';
+    const customerName = sale.customer_name || 'عميل';
     const type = sale.invoice_type || 'final';
     const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+    const customerTitle = `السيد ${customerName}`;
     
     let message = '🏷️ *JABAL ALSAFA*\n';
     message += '━'.repeat(30) + '\n';
     message += `📋 ${invoiceTitle}\n`;
     message += `📅 التاريخ: ${date}\n`;
-    message += `👤 العميل: ${customerName}\n`;
+    message += `👤 العميل: ${customerTitle}\n`;
     message += '━'.repeat(30) + '\n\n';
     message += '*المنتجات:*\n';
     
