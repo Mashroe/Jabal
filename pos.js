@@ -227,6 +227,7 @@ async function checkout() {
         return;
     }
     
+    // التحقق من الكميات
     for (const item of cart) {
         const product = posProducts.find(p => p.id === item.id);
         if (!product || product.quantity < item.quantity) {
@@ -240,15 +241,17 @@ async function checkout() {
         const saleId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
         
         // ===== جلب اسم العميل =====
-        const customerName = document.getElementById('customerName')?.value.trim() || 'عميل';
+        const customerNameInput = document.getElementById('customerName');
+        const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
         console.log('👤 Customer Name:', customerName);
         
         const sale = {
             id: saleId,
             total: total,
-            customer_name: customerName,
+            customer_name: customerName || 'عميل',
             created_at: new Date().toISOString()
         };
+        
         const items = cart.map(item => ({
             id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
             sale_id: saleId,
@@ -258,27 +261,43 @@ async function checkout() {
             product_name: item.name
         }));
         
+        console.log('📦 Sale data:', sale);
+        console.log('📦 Items data:', items);
+        
         lastSaleData = { sale, items, total };
         
         if (navigator.onLine) {
+            // ===== إدراج المبيعات =====
             const { error: saleError } = await supabaseClient
                 .from('sales')
                 .insert([sale]);
-            if (saleError) throw saleError;
             
+            if (saleError) {
+                console.error('❌ Sale error:', saleError);
+                throw saleError;
+            }
+            
+            // ===== إدراج عناصر المبيعات =====
             const { error: itemsError } = await supabaseClient
                 .from('sale_items')
                 .insert(items);
-            if (itemsError) throw itemsError;
             
+            if (itemsError) {
+                console.error('❌ Items error:', itemsError);
+                throw itemsError;
+            }
+            
+            // ===== تحديث كمية المنتجات =====
             for (const item of cart) {
                 const product = posProducts.find(p => p.id === item.id);
                 if (product) {
+                    const newQuantity = product.quantity - item.quantity;
                     await supabaseClient
                         .from('products')
-                        .update({ quantity: product.quantity - item.quantity })
+                        .update({ quantity: newQuantity })
                         .eq('id', item.id);
                     
+                    // ===== تسجيل حركة المخزون =====
                     await supabaseClient
                         .from('stock_movements')
                         .insert([{
@@ -289,9 +308,12 @@ async function checkout() {
                         }]);
                 }
             }
+            
         } else if (typeof offlineManager !== 'undefined' && offlineManager) {
+            // ===== وضع عدم الاتصال =====
             await offlineManager.saveToLocalDB('sales', sale);
             await offlineManager.saveToLocalDB('sale_items', items);
+            
             for (const item of cart) {
                 const product = posProducts.find(p => p.id === item.id);
                 if (product) {
@@ -299,6 +321,7 @@ async function checkout() {
                     await offlineManager.saveToLocalDB('products', product);
                 }
             }
+            
             await offlineManager.addPendingOperation({
                 type: 'sale',
                 data: { sale, items }
@@ -306,9 +329,14 @@ async function checkout() {
             showToast('📴 تم البيع (سيتم المزامنة عند الاتصال)', 'info');
         }
         
+        // ===== عرض الفاتورة =====
         showReceipt(sale, cart, total);
+        
+        // ===== تنظيف السلة =====
         cart = [];
         updateCart();
+        
+        // ===== تحديث البيانات =====
         await loadPOSProducts();
         if (typeof loadDashboardData === 'function') {
             await loadDashboardData();
@@ -317,9 +345,10 @@ async function checkout() {
         if (navigator.onLine) {
             showToast('✅ تم إتمام البيع بنجاح', 'success');
         }
+        
     } catch (error) {
-        console.error('Checkout error:', error);
-        showToast('حدث خطأ في إتمام البيع', 'error');
+        console.error('❌ Checkout error:', error);
+        showToast('⚠️ حدث خطأ في إتمام البيع: ' + (error.message || 'غير معروف'), 'error');
     }
 }
 
@@ -347,7 +376,7 @@ function showReceipt(sale, items, total) {
                 <div class="receipt-items">
                     ${items.map(item => `
                         <div class="receipt-item">
-                            <span>${escapeHtml(item.product_name || item.name || 'منتج')}</span>
+                            <span>${escapeHtml(item.name || item.product_name || 'منتج')}</span>
                             <span>${item.quantity} × ${formatCurrency(item.price)}</span>
                             <span>${formatCurrency(item.price * item.quantity)}</span>
                         </div>
@@ -411,7 +440,7 @@ function sendReceiptWhatsApp() {
     message += '*المنتجات:*\n';
     
     items.forEach(item => {
-        message += `• ${item.product_name || item.name}\n`;
+        message += `• ${item.name || item.product_name}\n`;
         message += `  ${item.quantity} × ${formatCurrency(item.price)} = ${formatCurrency(item.price * item.quantity)}\n`;
     });
     
