@@ -1,13 +1,10 @@
 // ============================================================
-// INVENTORY MANAGEMENT - VERSION FINAL
+// INVENTORY MANAGEMENT
 // ============================================================
 
-let inventoryProducts = [];
+let inventoryItems = [];
 let allMovements = [];
 
-// ============================================================
-// LOAD INVENTORY DATA
-// ============================================================
 async function loadInventoryData() {
     try {
         if (typeof supabaseClient === 'undefined') {
@@ -15,7 +12,7 @@ async function loadInventoryData() {
             showToast('خطأ في الاتصال بقاعدة البيانات', 'error');
             return;
         }
-        await Promise.all([loadInventoryProducts(), loadMovements()]);
+        await Promise.all([loadInventoryItems(), loadMovements()]);
         switchInventoryTab('current');
     } catch (error) {
         console.error('Error loading inventory:', error);
@@ -23,65 +20,63 @@ async function loadInventoryData() {
     }
 }
 
-// ============================================================
-// LOAD INVENTORY PRODUCTS
-// ============================================================
-async function loadInventoryProducts() {
+async function loadInventoryItems() {
     try {
         if (typeof supabaseClient === 'undefined') {
             console.warn('⚠️ supabaseClient not available');
             return;
         }
         
-        let products = [];
+        let items = [];
         if (navigator.onLine) {
             const { data, error } = await supabaseClient
-                .from('products')
-                .select('*')
-                .order('name');
+                .from('inventory')
+                .select(`
+                    *,
+                    products (name, price)
+                `)
+                .order('created_at', { ascending: false });
             
             if (error) {
                 console.error('Supabase error:', error);
                 throw error;
             }
-            products = data || [];
-            console.log(`✅ Loaded ${products.length} inventory products`);
+            items = data || [];
+            console.log(`✅ Loaded ${items.length} inventory items`);
             
-            if (typeof offlineManager !== 'undefined' && offlineManager && products.length > 0) {
-                await offlineManager.saveToLocalDB('products', products);
+            if (typeof offlineManager !== 'undefined' && offlineManager && items.length > 0) {
+                await offlineManager.saveToLocalDB('inventory', items);
             }
         } else if (typeof offlineManager !== 'undefined' && offlineManager) {
-            products = await offlineManager.getFromLocalDB('products');
-            console.log(`📴 Loaded ${products.length} products from local DB`);
-            if (products.length > 0) {
-                showToast('📴 عرض المنتجات من الذاكرة المحلية', 'info');
+            items = await offlineManager.getFromLocalDB('inventory');
+            console.log(`📴 Loaded ${items.length} inventory items from local DB`);
+            if (items.length > 0) {
+                showToast('📴 عرض المخزون من الذاكرة المحلية', 'info');
             }
         }
         
-        inventoryProducts = products;
-        renderInventoryProducts(products);
-        updateAlerts(products);
+        inventoryItems = items;
+        renderInventoryItems(items);
+        updateAlerts(items);
+        checkLowStockAlert(items);
         
     } catch (error) {
-        console.error('Error loading inventory products:', error);
-        showToast('حدث خطأ في تحميل المنتجات', 'error');
+        console.error('Error loading inventory items:', error);
+        showToast('حدث خطأ في تحميل المخزون', 'error');
     }
 }
 
-// ============================================================
-// RENDER INVENTORY PRODUCTS
-// ============================================================
-function renderInventoryProducts(products) {
+function renderInventoryItems(items) {
     const tbody = document.getElementById('inventoryTableBody');
     if (!tbody) {
         console.warn('⚠️ inventoryTableBody not found');
         return;
     }
     
-    if (!products || products.length === 0) {
+    if (!items || items.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; color: rgba(255,255,255,0.3); padding: 2rem;">
+                <td colspan="5" style="text-align: center; color: rgba(255,255,255,0.3); padding: 2rem;">
                     📦 لا توجد منتجات في المخزون
                 </td>
             </tr>
@@ -89,23 +84,22 @@ function renderInventoryProducts(products) {
         return;
     }
     
-    tbody.innerHTML = products.map((product, index) => {
-        const status = getProductStatus(product.quantity);
-        const statusBadge = getStatusBadge(status);
-        const lastUpdated = product.created_at ? 
-            new Date(product.created_at).toLocaleDateString('ar-SA') : 
-            '---';
+    tbody.innerHTML = items.map((item, index) => {
+        const productName = item.products?.name || 'منتج محذوف';
+        const productPrice = item.products?.price || 0;
         
         return `
             <tr>
                 <td>${index + 1}</td>
-                <td><strong>${escapeHtml(product.name)}</strong></td>
-                <td>${product.quantity}</td>
-                <td>${statusBadge}</td>
-                <td>${lastUpdated}</td>
+                <td><strong>${escapeHtml(productName)}</strong></td>
+                <td>${item.quantity}</td>
+                <td>${formatCurrency(productPrice)}</td>
                 <td>
-                    <button class="action-btn edit-btn" onclick="openStockModal('${product.id}')" title="إضافة/سحب مخزون">
-                        <i class="fas fa-plus"></i>
+                    <button class="action-btn edit-btn" onclick="openStockModal('${item.id}')" title="تعديل المخزون">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn delete-btn" onclick="deleteInventoryItem('${item.id}')" title="حذف">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
@@ -113,9 +107,26 @@ function renderInventoryProducts(products) {
     }).join('');
 }
 
-// ============================================================
-// LOAD MOVEMENTS
-// ============================================================
+async function deleteInventoryItem(id) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا العنصر من المخزون؟')) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('inventory')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('✅ تم حذف العنصر من المخزون', 'success');
+        await loadInventoryData();
+        
+    } catch (error) {
+        console.error('Error deleting inventory item:', error);
+        showToast('حدث خطأ في حذف العنصر', 'error');
+    }
+}
+
 async function loadMovements(filters = {}) {
     try {
         if (typeof supabaseClient === 'undefined') {
@@ -156,9 +167,6 @@ async function loadMovements(filters = {}) {
     }
 }
 
-// ============================================================
-// RENDER MOVEMENTS
-// ============================================================
 function renderMovements(movements) {
     const tbody = document.getElementById('movementsTableBody');
     if (!tbody) {
@@ -197,19 +205,16 @@ function renderMovements(movements) {
     }).join('');
 }
 
-// ============================================================
-// UPDATE ALERTS
-// ============================================================
-function updateAlerts(products) {
+function updateAlerts(items) {
     const alertsContainer = document.getElementById('alertsContainer');
     if (!alertsContainer) return;
     
-    const lowStockProducts = products.filter(p => p.quantity <= 5 && p.quantity > 0);
-    const outOfStockProducts = products.filter(p => p.quantity <= 0);
+    const lowStockItems = items.filter(i => i.quantity <= 5 && i.quantity > 0);
+    const outOfStockItems = items.filter(i => i.quantity <= 0);
     
     let alertsHTML = '';
     
-    if (outOfStockProducts.length > 0) {
+    if (outOfStockItems.length > 0) {
         alertsHTML += `
             <div class="alert-card alert-danger">
                 <i class="fas fa-times-circle"></i>
@@ -217,8 +222,8 @@ function updateAlerts(products) {
                     <h4>⚠️ منتجات نفذت من المخزون</h4>
                     <p>المنتجات التالية تحتاج إلى إعادة توريد:</p>
                     <ul>
-                        ${outOfStockProducts.map(p => 
-                            `<li>${escapeHtml(p.name)} - الكمية: ${p.quantity}</li>`
+                        ${outOfStockItems.map(i => 
+                            `<li>${escapeHtml(i.products?.name || 'منتج محذوف')} - الكمية: ${i.quantity}</li>`
                         ).join('')}
                     </ul>
                 </div>
@@ -226,7 +231,7 @@ function updateAlerts(products) {
         `;
     }
     
-    if (lowStockProducts.length > 0) {
+    if (lowStockItems.length > 0) {
         alertsHTML += `
             <div class="alert-card alert-warning">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -234,8 +239,8 @@ function updateAlerts(products) {
                     <h4>⚠️ منتجات منخفضة المخزون</h4>
                     <p>المنتجات التالية قاربت على النفاذ:</p>
                     <ul>
-                        ${lowStockProducts.map(p => 
-                            `<li>${escapeHtml(p.name)} - الكمية: ${p.quantity}</li>`
+                        ${lowStockItems.map(i => 
+                            `<li>${escapeHtml(i.products?.name || 'منتج محذوف')} - الكمية: ${i.quantity}</li>`
                         ).join('')}
                     </ul>
                 </div>
@@ -258,51 +263,38 @@ function updateAlerts(products) {
     alertsContainer.innerHTML = alertsHTML;
 }
 
-// ============================================================
-// SWITCH INVENTORY TAB
-// ============================================================
-function switchInventoryTab(tab) {
-    console.log('🔄 Switching to tab:', tab);
+function checkLowStockAlert(items) {
+    const lowStock = items.filter(i => i.quantity <= 5 && i.quantity > 0);
+    const outOfStock = items.filter(i => i.quantity <= 0);
     
-    // تحديث الأزرار
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.tab === tab) {
-            btn.classList.add('active');
+    if (lowStock.length > 0 || outOfStock.length > 0) {
+        if (Notification.permission === 'granted') {
+            new Notification('⚠️ تنبيه المخزون', {
+                body: `${outOfStock.length + lowStock.length} منتج بحاجة للمراجعة`,
+                icon: '🏷️'
+            });
         }
-    });
-    
-    // إخفاء جميع المحتويات
-    document.querySelectorAll('.tab-content').forEach(el => {
-        el.style.display = 'none';
-    });
-    
-    // إظهار المحتوى المطلوب
-    const tabMap = {
-        'current': 'currentStockTab',
-        'movements': 'movementsTab',
-        'alerts': 'alertsTab'
-    };
-    
-    const targetId = tabMap[tab];
-    if (targetId) {
-        const target = document.getElementById(targetId);
-        if (target) target.style.display = 'block';
-    }
-    
-    // تحميل البيانات حسب التبويب
-    if (tab === 'current') {
-        renderInventoryProducts(inventoryProducts);
-    } else if (tab === 'movements') {
-        loadMovements();
-    } else if (tab === 'alerts') {
-        updateAlerts(inventoryProducts);
     }
 }
 
-// ============================================================
-// STOCK MODAL
-// ============================================================
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+function switchInventoryTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tab) btn.classList.add('active');
+    });
+    
+    document.getElementById('currentStockTab').style.display = tab === 'current' ? 'block' : 'none';
+    document.getElementById('movementsTab').style.display = tab === 'movements' ? 'block' : 'none';
+    document.getElementById('alertsTab').style.display = tab === 'alerts' ? 'block' : 'none';
+    
+    if (tab === 'current') renderInventoryItems(inventoryItems);
+    else if (tab === 'movements') loadMovements();
+}
+
 document.getElementById('addStockBtn')?.addEventListener('click', function() { openStockModal(); });
 document.getElementById('closeStockModal')?.addEventListener('click', closeStockModal);
 document.getElementById('cancelStock')?.addEventListener('click', closeStockModal);
@@ -315,19 +307,32 @@ document.getElementById('filterMovementsBtn')?.addEventListener('click', functio
     loadMovements({ from, to, type });
 });
 
-function openStockModal(productId = null) {
+function openStockModal(itemId = null) {
     const modal = document.getElementById('stockModal');
     const select = document.getElementById('stockProduct');
-    if (select) {
-        select.innerHTML = `
-            <option value="">اختر منتج...</option>
-            ${inventoryProducts.map(p => `
-                <option value="${p.id}" ${p.id === productId ? 'selected' : ''}>
-                    ${escapeHtml(p.name)} (${p.quantity} متوفر)
-                </option>
-            `).join('')}
-        `;
+    
+    // إذا كان هناك itemId، نعدل المخزون الموجود
+    if (itemId) {
+        const item = inventoryItems.find(i => i.id === itemId);
+        if (item) {
+            select.innerHTML = `
+                <option value="${item.product_id}">${escapeHtml(item.products?.name || 'منتج محذوف')} (${item.quantity} متوفر)</option>
+            `;
+            document.getElementById('stockQuantity').value = '';
+            document.getElementById('stockType').value = 'in';
+            modal.classList.add('active');
+            return;
+        }
     }
+    
+    // إضافة مخزون جديد
+    select.innerHTML = `
+        <option value="">اختر منتج...</option>
+        ${currentProducts.map(p => `
+            <option value="${p.id}">${escapeHtml(p.name)}</option>
+        `).join('')}
+    `;
+    
     document.getElementById('stockQuantity').value = '';
     document.getElementById('stockType').value = 'in';
     if (modal) modal.classList.add('active');
@@ -345,14 +350,8 @@ async function handleStockSubmit(e) {
     const quantity = parseInt(document.getElementById('stockQuantity').value);
     const type = document.getElementById('stockType').value;
     
-    if (!productId) { 
-        showToast('يرجى اختيار منتج', 'error'); 
-        return; 
-    }
-    if (!quantity || quantity <= 0) { 
-        showToast('يرجى إدخال كمية صحيحة', 'error'); 
-        return; 
-    }
+    if (!productId) { showToast('يرجى اختيار منتج', 'error'); return; }
+    if (!quantity || quantity <= 0) { showToast('يرجى إدخال كمية صحيحة', 'error'); return; }
     
     try {
         if (typeof supabaseClient === 'undefined') {
@@ -360,54 +359,73 @@ async function handleStockSubmit(e) {
             return;
         }
         
-        const product = inventoryProducts.find(p => p.id === productId);
-        if (!product) { 
-            showToast('المنتج غير موجود', 'error'); 
-            return; 
-        }
+        // التحقق من وجود المنتج في المخزون
+        const { data: existingInventory } = await supabaseClient
+            .from('inventory')
+            .select('id, quantity')
+            .eq('product_id', productId)
+            .maybeSingle();
         
-        const newQuantity = type === 'in' ? product.quantity + quantity : product.quantity - quantity;
-        if (newQuantity < 0) { 
-            showToast('الكمية المطلوبة للسحب غير متوفرة', 'error'); 
-            return; 
-        }
+        let newQuantity;
         
-        const movement = {
-            id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
-            product_id: productId,
-            type: type,
-            quantity: quantity,
-            created_at: new Date().toISOString()
-        };
-        
-        if (navigator.onLine) {
+        if (existingInventory) {
+            // تحديث الكمية
+            newQuantity = type === 'in' ? existingInventory.quantity + quantity : existingInventory.quantity - quantity;
+            
+            if (newQuantity < 0) {
+                showToast('الكمية المطلوبة للسحب غير متوفرة', 'error');
+                return;
+            }
+            
             const { error: updateError } = await supabaseClient
-                .from('products')
+                .from('inventory')
                 .update({ quantity: newQuantity })
-                .eq('id', productId);
+                .eq('id', existingInventory.id);
+            
             if (updateError) throw updateError;
             
-            const { error: movementError } = await supabaseClient
-                .from('stock_movements')
-                .insert([movement]);
-            if (movementError) throw movementError;
-        } else if (typeof offlineManager !== 'undefined' && offlineManager) {
-            product.quantity = newQuantity;
-            await offlineManager.saveToLocalDB('products', product);
-            await offlineManager.saveToLocalDB('stock_movements', movement);
-            await offlineManager.addPendingOperation({
-                type: 'stock_movement',
-                data: movement
-            });
-            showToast('📴 تم تحديث المخزون (سيتم المزامنة عند الاتصال)', 'info');
+        } else {
+            // إضافة منتج جديد للمخزون
+            if (type === 'out') {
+                showToast('لا يمكن سحب كمية من منتج غير موجود في المخزون', 'error');
+                return;
+            }
+            
+            newQuantity = quantity;
+            
+            const { error: insertError } = await supabaseClient
+                .from('inventory')
+                .insert([{
+                    product_id: productId,
+                    quantity: quantity
+                }]);
+            
+            if (insertError) throw insertError;
         }
         
-        showToast('✅ تم تحديث المخزون بنجاح', 'success');
+        // تسجيل حركة المخزون
+        const { error: movementError } = await supabaseClient
+            .from('stock_movements')
+            .insert([{
+                product_id: productId,
+                type: type,
+                quantity: quantity,
+                note: type === 'in' ? 'إضافة مخزون' : 'سحب من المخزون'
+            }]);
+        
+        if (movementError) throw movementError;
+        
+        showToast(`✅ تم ${type === 'in' ? 'إضافة' : 'سحب'} المخزون بنجاح`, 'success');
+        
         closeStockModal();
         await loadInventoryData();
         if (typeof loadDashboardData === 'function') {
             await loadDashboardData();
         }
+        if (typeof loadProducts === 'function') {
+            await loadProducts();
+        }
+        
     } catch (error) {
         console.error('Error updating stock:', error);
         showToast('حدث خطأ في تحديث المخزون: ' + (error.message || 'غير معروف'), 'error');
@@ -416,28 +434,12 @@ async function handleStockSubmit(e) {
 
 document.getElementById('inventorySearch')?.addEventListener('input', function() {
     const searchTerm = this.value.toLowerCase();
-    const filtered = inventoryProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
-    renderInventoryProducts(filtered);
+    const filtered = inventoryItems.filter(i => 
+        i.products?.name?.toLowerCase().includes(searchTerm)
+    );
+    renderInventoryItems(filtered);
 });
 
-// ============================================================
-// EVENT LISTENERS FOR TABS
-// ============================================================
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const tab = this.dataset.tab;
-            if (tab && typeof switchInventoryTab === 'function') {
-                switchInventoryTab(tab);
-            }
-        });
-    });
-});
-
-// ============================================================
-// EXPORT
-// ============================================================
 window.loadInventoryData = loadInventoryData;
 window.openStockModal = openStockModal;
 window.switchInventoryTab = switchInventoryTab;
