@@ -241,6 +241,7 @@ async function checkout() {
         
         // ===== جلب اسم العميل =====
         const customerName = document.getElementById('customerName')?.value.trim() || 'عميل';
+        console.log('👤 Customer Name:', customerName);
         
         const sale = {
             id: saleId,
@@ -337,7 +338,10 @@ function showReceipt(sale, items, total) {
                     <p>فاتورة بيع</p>
                     <small>رقم: #${receiptNumber}</small>
                     <small>التاريخ: ${date}</small>
-                    <small>👤 العميل: ${escapeHtml(customerName)}</small>
+                    <div class="customer-name-display">
+                        <span>👤 العميل</span>
+                        <strong>${escapeHtml(customerName)}</strong>
+                    </div>
                 </div>
                 <div class="receipt-divider"></div>
                 <div class="receipt-items">
@@ -362,6 +366,30 @@ function showReceipt(sale, items, total) {
     }
     if (modal) modal.classList.add('active');
 }
+
+// ============================================================
+// حقل اسم العميل - إظهار/إخفاء زر المسح
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    const customerInput = document.getElementById('customerName');
+    const clearBtn = document.getElementById('clearCustomerName');
+
+    if (customerInput && clearBtn) {
+        customerInput.addEventListener('input', function() {
+            if (this.value.trim() !== '') {
+                clearBtn.style.display = 'block';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+        });
+        
+        clearBtn.addEventListener('click', function() {
+            customerInput.value = '';
+            this.style.display = 'none';
+            customerInput.focus();
+        });
+    }
+});
 
 function sendReceiptWhatsApp() {
     if (!lastSaleData) {
