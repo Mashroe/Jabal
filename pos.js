@@ -382,9 +382,9 @@ function showReceipt(sale, items, total, type = 'final') {
     const customerName = sale.customer_name || 'عميل';
     
     // تحديد لقب العميل
-    const customerTitle = customerName.startsWith('السيد') || customerName.startsWith('السيدة') 
+    const customerTitle = customerName.startsWith('السيد') || customerName.startsWith('') 
         ? customerName 
-        : `السيد/السيدة ${customerName}`;
+        : `السيد/ ${customerName}`;
     
     // عنوان الفاتورة حسب النوع
     const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
