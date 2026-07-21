@@ -233,6 +233,125 @@ function clearCart() {
     }
 }
 
+// ============================================================
+// معاينة الفاتورة قبل إتمام البيع
+// ============================================================
+function previewInvoice() {
+    if (cart.length === 0) {
+        showToast('السلة فارغة. أضف منتجات أولاً', 'error');
+        return;
+    }
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const customerNameInput = document.getElementById('customerName');
+    const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
+    
+    const tempSale = {
+        id: 'preview_' + Date.now(),
+        total: total,
+        customer_name: customerName || 'عميل',
+        invoice_type: invoiceType,
+        created_at: new Date().toISOString()
+    };
+    
+    showReceiptPreview(tempSale, cart, total, invoiceType);
+}
+
+// ============================================================
+// عرض فاتورة المعاينة
+// ============================================================
+function showReceiptPreview(sale, items, total, type = 'final') {
+    const modal = document.getElementById('receiptModal');
+    const body = document.getElementById('receiptBody');
+    const date = new Date(sale.created_at).toLocaleString('ar-SA');
+    const receiptNumber = 'معاينة-' + Date.now().toString().slice(-6);
+    const customerName = sale.customer_name || 'عميل';
+    const customerTitle = `السيد/ ${customerName}`;
+    
+    const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
+    const invoiceStatus = '📄 معاينة - غير معتمدة';
+    
+    if (body) {
+        body.innerHTML = `
+            <div class="receipt" id="receiptContent">
+                <div class="receipt-header">
+                    <h2>🏷️ JABAL ALSAFA</h2>
+                    <p>${invoiceTitle}</p>
+                    <small>رقم: #${receiptNumber}</small>
+                    <small>التاريخ: ${date}</small>
+                    <small style="color: #ffc800;">${invoiceStatus}</small>
+                    <div class="customer-name-display">
+                        <span>👤 العميل</span>
+                        <strong>${escapeHtml(customerTitle)}</strong>
+                    </div>
+                </div>
+                <div class="receipt-divider"></div>
+                
+                <div class="receipt-table-header">
+                    <span>الصنف</span>
+                    <span>الكمية</span>
+                    <span>السعر</span>
+                    <span>الإجمالي</span>
+                </div>
+                
+                <div class="receipt-divider"></div>
+                
+                <div class="receipt-items">
+                    ${items.map(item => `
+                        <div class="receipt-item">
+                            <span class="item-name">${escapeHtml(item.name || item.product_name || 'منتج')}</span>
+                            <span class="item-qty">${item.quantity}</span>
+                            <span class="item-price">${formatCurrency(item.price)}</span>
+                            <span class="item-total">${formatCurrency(item.price * item.quantity)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="receipt-divider"></div>
+                
+                <div class="receipt-total">
+                    <span>المجموع الكلي</span>
+                    <span>${formatCurrency(total)}</span>
+                </div>
+                
+                <div class="receipt-footer">
+                    <small style="color: #ffc800;">⚠️ هذه معاينة للفاتورة، لم تتم العملية بعد</small>
+                </div>
+            </div>
+        `;
+        
+        const actions = document.querySelector('#receiptModal .modal-actions');
+        if (actions) {
+            actions.innerHTML = `
+                <button class="btn-secondary" onclick="closeReceiptPreview()">
+                    <i class="fas fa-times"></i>
+                    إغلاق
+                </button>
+                <button class="btn-primary" onclick="closeReceiptPreviewAndCheckout()">
+                    <i class="fas fa-check"></i>
+                    تأكيد وإتمام البيع
+                </button>
+            `;
+        }
+    }
+    if (modal) modal.classList.add('active');
+}
+
+// ============================================================
+// إغلاق معاينة الفاتورة
+// ============================================================
+function closeReceiptPreview() {
+    document.getElementById('receiptModal').classList.remove('active');
+}
+
+// ============================================================
+// إغلاق المعاينة وإتمام البيع
+// ============================================================
+function closeReceiptPreviewAndCheckout() {
+    document.getElementById('receiptModal').classList.remove('active');
+    checkout();
+}
+
 async function checkout() {
     if (cart.length === 0) {
         showToast('السلة فارغة. أضف منتجات أولاً', 'error');
@@ -244,7 +363,6 @@ async function checkout() {
         return;
     }
     
-    // التحقق من الكميات
     for (const item of cart) {
         const product = posProducts.find(p => p.id === item.id);
         if (!product || product.quantity < item.quantity) {
@@ -257,12 +375,10 @@ async function checkout() {
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const saleId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
         
-        // ===== جلب اسم العميل =====
         const customerNameInput = document.getElementById('customerName');
         const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
         console.log('👤 Customer Name:', customerName);
         
-        // ===== جلب نوع الفاتورة =====
         const invoiceTypeLabel = invoiceType === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
         console.log('📄 Invoice Type:', invoiceTypeLabel);
         
@@ -289,7 +405,6 @@ async function checkout() {
         lastSaleData = { sale, items, total };
         
         if (navigator.onLine) {
-            // ===== إدراج المبيعات =====
             const { error: saleError } = await supabaseClient
                 .from('sales')
                 .insert([sale]);
@@ -299,7 +414,6 @@ async function checkout() {
                 throw saleError;
             }
             
-            // ===== إدراج عناصر المبيعات =====
             const { error: itemsError } = await supabaseClient
                 .from('sale_items')
                 .insert(items);
@@ -309,7 +423,6 @@ async function checkout() {
                 throw itemsError;
             }
             
-            // ===== تحديث كمية المنتجات =====
             for (const item of cart) {
                 const product = posProducts.find(p => p.id === item.id);
                 if (product) {
@@ -319,7 +432,6 @@ async function checkout() {
                         .update({ quantity: newQuantity })
                         .eq('id', item.id);
                     
-                    // ===== تسجيل حركة المخزون =====
                     await supabaseClient
                         .from('stock_movements')
                         .insert([{
@@ -332,7 +444,6 @@ async function checkout() {
             }
             
         } else if (typeof offlineManager !== 'undefined' && offlineManager) {
-            // ===== وضع عدم الاتصال =====
             await offlineManager.saveToLocalDB('sales', sale);
             await offlineManager.saveToLocalDB('sale_items', items);
             
@@ -351,14 +462,11 @@ async function checkout() {
             showToast('📴 تم البيع (سيتم المزامنة عند الاتصال)', 'info');
         }
         
-        // ===== عرض الفاتورة =====
         showReceipt(sale, cart, total, invoiceType);
         
-        // ===== تنظيف السلة =====
         cart = [];
         updateCart();
         
-        // ===== تحديث البيانات =====
         await loadPOSProducts();
         if (typeof loadDashboardData === 'function') {
             await loadDashboardData();
@@ -380,11 +488,8 @@ function showReceipt(sale, items, total, type = 'final') {
     const date = new Date(sale.created_at).toLocaleString('ar-SA');
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
     const customerName = sale.customer_name || 'عميل';
+    const customerTitle = `السيد/ ${customerName}`;
     
-    // ===== إضافة لقب "السيد" قبل اسم العميل =====
-    const customerTitle = `السيد ${customerName}`;
-    
-    // عنوان الفاتورة حسب النوع
     const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
     const invoiceStatus = type === 'final' ? '✅ معتمدة' : '⏳ مسودة - غير معتمدة';
     
@@ -478,7 +583,7 @@ function sendReceiptWhatsApp() {
     const customerName = sale.customer_name || 'عميل';
     const type = sale.invoice_type || 'final';
     const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
-    const customerTitle = `السيد ${customerName}`;
+    const customerTitle = `السيد/ ${customerName}`;
     
     let message = '🏷️ *JABAL ALSAFA*\n';
     message += '━'.repeat(30) + '\n';
@@ -550,6 +655,10 @@ document.getElementById('posSearch')?.addEventListener('input', function() {
 });
 
 document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
+
+// ===== زر معاينة الفاتورة =====
+document.getElementById('previewInvoiceBtn')?.addEventListener('click', previewInvoice);
+
 document.getElementById('checkoutBtn')?.addEventListener('click', checkout);
 
 document.getElementById('closeReceiptModal')?.addEventListener('click', () => {
@@ -574,5 +683,8 @@ window.printReceipt = printReceipt;
 window.sendReceiptWhatsApp = sendReceiptWhatsApp;
 window.loadPOSProducts = loadPOSProducts;
 window.selectInvoiceType = selectInvoiceType;
+window.previewInvoice = previewInvoice;
+window.closeReceiptPreview = closeReceiptPreview;
+window.closeReceiptPreviewAndCheckout = closeReceiptPreviewAndCheckout;
 
 console.log('✅ POS Module Loaded');
