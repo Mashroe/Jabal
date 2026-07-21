@@ -477,7 +477,7 @@ function sendReceiptWhatsApp() {
     const { sale, items, total } = lastSaleData;
     const date = new Date(sale.created_at).toLocaleString('ar-SA');
     const receiptNumber = sale.id.slice(0, 8).toUpperCase();
-    const customerName = sale.customer_name || 'عميل';
+    const customerName = sale.customer_name || 'السيد';
     const type = sale.invoice_type || 'final';
     const invoiceTitle = type === 'final' ? 'فاتورة بيع (نهائية)' : 'فاتورة مبدئية (مسودة)';
     
