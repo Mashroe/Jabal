@@ -1,5 +1,5 @@
 // ============================================================
-// POS SYSTEM
+// POS SYSTEM - نسخة محسنة مع إصلاح الطباعة
 // ============================================================
 
 let posProducts = [];
@@ -600,72 +600,400 @@ function sendReceiptWhatsApp() {
     window.open(whatsappUrl, '_blank');
 }
 
+// ============================================================
+// 🖨️ طباعة الفاتورة (النسخة المحسنة مع رسائل خطأ وحلول بديلة)
+// ============================================================
 function printReceipt() {
-    const receiptContent = document.getElementById('receiptBody')?.innerHTML;
-    if (!receiptContent) return;
-    
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) return;
-    
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>فاتورة البيع</title>
-                <style>
-                    @media print { body { margin: 0; padding: 20px; } .no-print { display: none; } }
-                    body { font-family: 'Inter', 'Arial', sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; background: white; color: black; }
-                    .receipt { background: white; padding: 20px; }
-                    .receipt-header { text-align: center; margin-bottom: 20px; }
-                    .receipt-header h2 { margin: 0; color: #000; font-size: 20px; }
-                    .receipt-header p { margin: 5px 0; color: #666; font-size: 14px; }
-                    .receipt-header small { display: block; color: #999; font-size: 12px; }
-                    .receipt-divider { border-top: 1px dashed #ddd; margin: 15px 0; }
-                    .receipt-items { margin: 15px 0; }
-                    .receipt-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
-                    .receipt-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin: 15px 0; }
-                    .receipt-footer { text-align: center; color: #999; margin-top: 20px; font-size: 12px; }
-                </style>
-            </head>
-            <body>
-                ${receiptContent}
-                <button class="print-btn no-print" onclick="window.print()" style="display:block;width:100%;padding:10px;margin:10px 0;background:#00b4d8;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;">🖨️ طباعة</button>
-                <script>
-                    window.onload = function() {
-                        setTimeout(function() { window.print(); }, 500);
-                    };
-                <\/script>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
+    try {
+        // 1. التحقق من وجود محتوى الفاتورة
+        const receiptContent = document.getElementById('receiptBody')?.innerHTML;
+        if (!receiptContent || receiptContent.trim() === '') {
+            showToast('⚠️ لا يوجد محتوى للطباعة. يرجى إنشاء فاتورة أولاً.', 'error');
+            console.warn('⚠️ printReceipt: receiptBody is empty');
+            return;
+        }
+
+        // 2. محاولة فتح نافذة الطباعة
+        const printWindow = window.open('', '_blank', 'width=500,height=700');
+        
+        // 3. إذا تم حظر النافذة المنبثقة
+        if (!printWindow) {
+            showToast('⚠️ الرجاء السماح للنوافذ المنبثقة (Pop-up) في المتصفح', 'error');
+            console.warn('⚠️ printReceipt: Pop-up blocked');
+            
+            // ===== حل بديل: استخدام window.print() مباشرة =====
+            const shouldUseFallback = confirm(
+                '⚠️ تعذر فتح نافذة الطباعة.\n\n' +
+                'هل تريد طباعة الفاتورة في الصفحة الحالية بدلاً من ذلك؟\n' +
+                '(سيتم إخفاء العناصر غير الضرورية مؤقتاً)'
+            );
+            
+            if (shouldUseFallback) {
+                // إخفاء العناصر غير المرغوب فيها مؤقتاً
+                const sidebar = document.querySelector('.sidebar');
+                const topbar = document.querySelector('.topbar');
+                const quickActions = document.querySelector('.quick-actions');
+                const modalActions = document.querySelector('#receiptModal .modal-actions');
+                const modalHeader = document.querySelector('#receiptModal .modal-header');
+                const modalClose = document.querySelector('#receiptModal .modal-close');
+                
+                if (sidebar) sidebar.style.display = 'none';
+                if (topbar) topbar.style.display = 'none';
+                if (quickActions) quickActions.style.display = 'none';
+                if (modalActions) modalActions.style.display = 'none';
+                if (modalHeader) modalHeader.style.display = 'none';
+                if (modalClose) modalClose.style.display = 'none';
+                
+                // طباعة الصفحة
+                window.print();
+                
+                // إعادة العناصر بعد الطباعة
+                setTimeout(() => {
+                    if (sidebar) sidebar.style.display = '';
+                    if (topbar) topbar.style.display = '';
+                    if (quickActions) quickActions.style.display = '';
+                    if (modalActions) modalActions.style.display = '';
+                    if (modalHeader) modalHeader.style.display = '';
+                    if (modalClose) modalClose.style.display = '';
+                }, 1000);
+                
+                showToast('🖨️ جاري الطباعة...', 'info');
+            }
+            return;
+        }
+
+        // 4. بناء HTML كامل للطباعة (نسخة احترافية)
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>فاتورة البيع - JABAL ALSAFA</title>
+                    <style>
+                        /* ===== جميع الأنماط ===== */
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body {
+                            font-family: 'Arial', 'Tahoma', sans-serif;
+                            background: #f0f2f5;
+                            padding: 30px 20px;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            direction: rtl;
+                        }
+                        .receipt {
+                            max-width: 420px;
+                            width: 100%;
+                            margin: 0 auto;
+                            background: #ffffff;
+                            padding: 35px 30px;
+                            border: 2px solid #1a1a2e;
+                            border-radius: 20px;
+                            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                        }
+                        .receipt-header {
+                            text-align: center;
+                            margin-bottom: 25px;
+                            padding-bottom: 20px;
+                            border-bottom: 2px dashed #e8e8e8;
+                        }
+                        .receipt-header h2 {
+                            font-size: 28px;
+                            font-weight: 900;
+                            color: #0077b6;
+                            letter-spacing: 1px;
+                            margin-bottom: 4px;
+                        }
+                        .receipt-header p {
+                            font-size: 16px;
+                            color: #555;
+                            margin-bottom: 10px;
+                            font-weight: 600;
+                        }
+                        .receipt-header small {
+                            display: block;
+                            color: #999;
+                            font-size: 12px;
+                            margin: 3px 0;
+                        }
+                        .receipt-header .invoice-status {
+                            color: #ffc800;
+                            font-weight: 600;
+                        }
+                        .customer-name-display {
+                            margin-top: 12px;
+                            padding: 10px 16px;
+                            background: linear-gradient(135deg, #f0f7ff, #e3eeff);
+                            border-radius: 12px;
+                            border-right: 4px solid #0077b6;
+                        }
+                        .customer-name-display strong {
+                            color: #1a1a2e;
+                            font-size: 15px;
+                        }
+                        .receipt-divider {
+                            border-top: 1px dashed #ddd;
+                            margin: 12px 0;
+                        }
+                        .receipt-table-header {
+                            display: grid;
+                            grid-template-columns: 2fr 0.8fr 1fr 1fr;
+                            gap: 5px;
+                            padding: 8px 0;
+                            font-size: 11px;
+                            font-weight: 700;
+                            color: #666;
+                            text-transform: uppercase;
+                            border-bottom: 2px solid #0077b6;
+                        }
+                        .receipt-item {
+                            display: grid;
+                            grid-template-columns: 2fr 0.8fr 1fr 1fr;
+                            gap: 5px;
+                            padding: 6px 0;
+                            font-size: 13px;
+                            color: #333;
+                            border-bottom: 1px solid #f0f0f0;
+                        }
+                        .receipt-item:last-child {
+                            border-bottom: none;
+                        }
+                        .receipt-item .item-name {
+                            font-weight: 500;
+                            color: #1a1a2e;
+                        }
+                        .receipt-item .item-qty {
+                            text-align: center;
+                            color: #666;
+                        }
+                        .receipt-item .item-price {
+                            text-align: left;
+                            color: #666;
+                        }
+                        .receipt-item .item-total {
+                            text-align: left;
+                            font-weight: 700;
+                            color: #0077b6;
+                        }
+                        .receipt-total {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 18px 5px 12px;
+                            margin-top: 12px;
+                            border-top: 3px double #0077b6;
+                            font-size: 20px;
+                            font-weight: 700;
+                        }
+                        .receipt-total span:last-child {
+                            color: #0077b6;
+                            font-size: 24px;
+                            background: #f0f7ff;
+                            padding: 2px 16px;
+                            border-radius: 8px;
+                        }
+                        .receipt-footer {
+                            text-align: center;
+                            margin-top: 20px;
+                            padding-top: 15px;
+                            border-top: 1px solid #eee;
+                        }
+                        .receipt-footer .contact-info {
+                            color: #555;
+                            font-size: 13px;
+                            font-weight: 600;
+                            margin: 2px 0;
+                        }
+                        .receipt-footer .thanks-msg {
+                            color: #888;
+                            font-size: 14px;
+                            font-weight: 500;
+                            margin: 4px 0;
+                        }
+                        .print-btn {
+                            display: block;
+                            width: 100%;
+                            padding: 14px;
+                            margin-top: 15px;
+                            background: linear-gradient(135deg, #0077b6, #005a8c);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 15px rgba(0,119,182,0.3);
+                        }
+                        .print-btn:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 25px rgba(0,119,182,0.4);
+                        }
+                        .close-btn {
+                            display: block;
+                            width: 100%;
+                            padding: 12px;
+                            margin-top: 8px;
+                            background: #f5f5f5;
+                            color: #555;
+                            border: 1px solid #ddd;
+                            border-radius: 12px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        }
+                        .close-btn:hover {
+                            background: #eee;
+                        }
+                        
+                        /* ===== أنماط الطباعة ===== */
+                        @media print {
+                            body {
+                                background: white !important;
+                                padding: 5px !important;
+                                margin: 0 !important;
+                                display: block !important;
+                            }
+                            .receipt {
+                                border: 1px solid #ddd !important;
+                                box-shadow: none !important;
+                                padding: 15px !important;
+                                max-width: 100% !important;
+                                border-radius: 0 !important;
+                            }
+                            .print-btn, .close-btn {
+                                display: none !important;
+                            }
+                            .no-print {
+                                display: none !important;
+                            }
+                            .customer-name-display {
+                                background: #f0f7ff !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                            .receipt-total span:last-child {
+                                background: #f0f7ff !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                        }
+                        
+                        /* ===== أنماط الجوال ===== */
+                        @media (max-width: 480px) {
+                            body { padding: 10px; }
+                            .receipt { padding: 18px 15px; }
+                            .receipt-total { font-size: 16px; }
+                            .receipt-total span:last-child { font-size: 18px; }
+                            .receipt-item { font-size: 12px; }
+                            .receipt-item { padding: 4px 0; }
+                            .receipt-header h2 { font-size: 22px; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt">
+                        ${receiptContent}
+                    </div>
+                    
+                    <!-- ===== أزرار التحكم ===== -->
+                    <button class="print-btn no-print" onclick="window.print()">
+                        🖨️ طباعة الفاتورة
+                    </button>
+                    <button class="close-btn no-print" onclick="window.close()">
+                        ✖ إغلاق
+                    </button>
+                    
+                    <script>
+                        // ===== الطباعة التلقائية =====
+                        (function() {
+                            if (document.readyState === 'complete') {
+                                startPrint();
+                            } else {
+                                window.addEventListener('load', startPrint);
+                            }
+                            
+                            function startPrint() {
+                                setTimeout(function() {
+                                    window.print();
+                                }, 800);
+                            }
+                        })();
+                    <\/script>
+                </body>
+            </html>
+        `;
+
+        // 5. كتابة المحتوى في النافذة الجديدة
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        
+        // 6. التركيز على النافذة الجديدة
+        printWindow.focus();
+        
+        showToast('🖨️ جاري فتح نافذة الطباعة...', 'info');
+        
+    } catch (error) {
+        console.error('❌ Error in printReceipt:', error);
+        showToast('⚠️ حدث خطأ في الطباعة: ' + (error.message || 'غير معروف'), 'error');
+    }
 }
 
+// ============================================================
+// ربط الأحداث (Event Listeners)
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // ربط زر الطباعة
+    const printBtn = document.getElementById('printReceiptBtn');
+    if (printBtn) {
+        // إزالة أي مستمعين قديمين لتجنب التكرار
+        const newPrintBtn = printBtn.cloneNode(true);
+        printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
+        newPrintBtn.addEventListener('click', printReceipt);
+        console.log('✅ printReceiptBtn event bound');
+    } else {
+        console.warn('⚠️ printReceiptBtn not found in DOM');
+    }
+});
+
+// ===== البحث في المنتجات =====
 document.getElementById('posSearch')?.addEventListener('input', function() {
     const searchTerm = this.value.toLowerCase();
     const filtered = posProducts.filter(p => p.name.toLowerCase().includes(searchTerm));
     renderPOSProducts(filtered);
 });
 
+// ===== تفريغ السلة =====
 document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
 
-// ===== زر معاينة الفاتورة =====
+// ===== معاينة الفاتورة =====
 document.getElementById('previewInvoiceBtn')?.addEventListener('click', previewInvoice);
 
+// ===== إتمام البيع =====
 document.getElementById('checkoutBtn')?.addEventListener('click', checkout);
 
+// ===== إغلاق نافذة الفاتورة =====
 document.getElementById('closeReceiptModal')?.addEventListener('click', () => {
     document.getElementById('receiptModal')?.classList.remove('active');
 });
 document.getElementById('closeReceiptBtn')?.addEventListener('click', () => {
     document.getElementById('receiptModal')?.classList.remove('active');
 });
-document.getElementById('printReceiptBtn')?.addEventListener('click', printReceipt);
+
+// ===== واتساب =====
 document.getElementById('whatsappBtn')?.addEventListener('click', sendReceiptWhatsApp);
 
+// ===== إغلاق النافذة بالضغط خارجها =====
 document.getElementById('receiptModal')?.addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('active');
 });
 
+// ============================================================
+// تصدير الدوال للنطاق العام
+// ============================================================
 window.addToCart = addToCart;
 window.updateCartQuantity = updateCartQuantity;
 window.removeFromCart = removeFromCart;
