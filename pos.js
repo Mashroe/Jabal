@@ -1,5 +1,6 @@
 // ============================================================
 // POS SYSTEM - النسخة النهائية مع الخدمات وتعديل الأسعار
+// مع التأكد من جميع الجداول في Supabase
 // ============================================================
 
 let posProducts = [];
@@ -587,45 +588,61 @@ function closeReceiptPreviewAndCheckout() {
 }
 
 // ============================================================
-// إتمام البيع
+// ✅ إتمام البيع (نسخة محسنة مع التأكد من الجداول)
 // ============================================================
 async function checkout() {
+    // ===== 1. التحقق من وجود منتجات أو خدمات =====
     if (cart.length === 0 && services.length === 0) {
         showToast('⚠️ السلة فارغة. أضف منتجات أو خدمات أولاً', 'error');
+        console.warn('⚠️ Checkout: Cart is empty');
         return;
     }
-    
+
+    // ===== 2. التحقق من وجود Supabase =====
     if (typeof supabaseClient === 'undefined') {
-        showToast('خطأ في الاتصال بقاعدة البيانات', 'error');
+        showToast('❌ خطأ في الاتصال بقاعدة البيانات', 'error');
+        console.error('❌ Checkout: supabaseClient is not defined');
         return;
     }
-    
+
+    // ===== 3. التحقق من المخزون =====
     for (const item of cart) {
         const product = posProducts.find(p => p.id === item.id);
-        if (!product || product.quantity < item.quantity) {
-            showToast(`⚠️ الكمية المطلوبة من ${item.name} غير متوفرة في المخزون`, 'error');
+        if (!product) {
+            showToast(`❌ المنتج ${item.name} غير موجود في النظام`, 'error');
+            console.error(`❌ Checkout: Product ${item.name} not found`);
+            return;
+        }
+        if (product.quantity < item.quantity) {
+            showToast(`⚠️ الكمية المطلوبة من ${item.name} غير متوفرة\nالمتوفر: ${product.quantity} | المطلوب: ${item.quantity}`, 'error');
+            console.warn(`⚠️ Checkout: Insufficient stock for ${item.name}`);
             return;
         }
     }
-    
+
+    // ===== 4. محاولة إتمام البيع =====
     try {
+        showToast('⏳ جاري إتمام البيع...', 'info');
+        
         const { subtotal, servicesTotal, total } = calculateTotals();
         const saleId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
         
         const customerNameInput = document.getElementById('customerName');
         const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
-        
+
+        // ===== 5. تجهيز بيانات الفاتورة =====
         const sale = {
             id: saleId,
             total: total,
             subtotal: subtotal,
             services_total: servicesTotal,
-            services: services,
+            services: services || [],
             customer_name: customerName || 'عميل',
-            invoice_type: invoiceType,
+            invoice_type: invoiceType || 'final',
+            status: 'completed',
             created_at: new Date().toISOString()
         };
-        
+
         const items = cart.map(item => ({
             id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
             sale_id: saleId,
@@ -633,92 +650,137 @@ async function checkout() {
             quantity: item.quantity,
             price: item.isCustomPrice ? item.customPrice : item.price,
             original_price: item.price,
-            is_custom_price: item.isCustomPrice,
-            product_name: item.name
+            is_custom_price: item.isCustomPrice || false,
+            product_name: item.name,
+            created_at: new Date().toISOString()
         }));
-        
-        console.log('📦 Sale data:', sale);
-        console.log('📦 Items data:', items);
-        console.log('🛠️ Services:', services);
-        
+
+        console.log('📦 Sale data:', JSON.stringify(sale, null, 2));
+        console.log('📦 Items data:', JSON.stringify(items, null, 2));
+        console.log('🛠️ Services:', JSON.stringify(services, null, 2));
+
         lastSaleData = { sale, items, services, total };
-        
+
+        // ===== 6. حفظ البيانات =====
         if (navigator.onLine) {
-            const { error: saleError } = await supabaseClient
+            // ===== 6a. حفظ المبيع في جدول sales =====
+            console.log('📤 Inserting into sales table...');
+            const { data: saleData, error: saleError } = await supabaseClient
                 .from('sales')
-                .insert([sale]);
-            
+                .insert([sale])
+                .select();
+
             if (saleError) {
                 console.error('❌ Sale error:', saleError);
+                showToast(`❌ فشل حفظ الفاتورة: ${saleError.message}`, 'error');
                 throw saleError;
             }
-            
-            const { error: itemsError } = await supabaseClient
+            console.log('✅ Sale saved successfully:', saleData);
+
+            // ===== 6b. حفظ عناصر المبيع في جدول sale_items =====
+            console.log('📤 Inserting into sale_items table...');
+            const { data: itemsData, error: itemsError } = await supabaseClient
                 .from('sale_items')
-                .insert(items);
-            
+                .insert(items)
+                .select();
+
             if (itemsError) {
                 console.error('❌ Items error:', itemsError);
+                showToast(`❌ فشل حفظ عناصر الفاتورة: ${itemsError.message}`, 'error');
                 throw itemsError;
             }
-            
-            for (const item of cart) {
-                const product = posProducts.find(p => p.id === item.id);
-                if (product) {
-                    const newQuantity = product.quantity - item.quantity;
-                    await supabaseClient
-                        .from('products')
-                        .update({ quantity: newQuantity })
-                        .eq('id', item.id);
-                    
-                    await supabaseClient
-                        .from('stock_movements')
-                        .insert([{
-                            product_id: item.id,
-                            type: 'out',
-                            quantity: item.quantity,
-                            note: `بيع - فاتورة #${saleId.slice(0, 8)}`
-                        }]);
+            console.log('✅ Sale items saved successfully:', itemsData);
+
+            // ===== 6c. تحديث المخزون (فقط للفاتورة النهائية) =====
+            if (invoiceType === 'final') {
+                console.log('📤 Updating products table...');
+                for (const item of cart) {
+                    const product = posProducts.find(p => p.id === item.id);
+                    if (product) {
+                        const newQuantity = product.quantity - item.quantity;
+                        const { data: updateData, error: updateError } = await supabaseClient
+                            .from('products')
+                            .update({ quantity: newQuantity })
+                            .eq('id', item.id)
+                            .select();
+
+                        if (updateError) {
+                            console.warn(`⚠️ Failed to update stock for ${item.name}:`, updateError);
+                        } else {
+                            console.log(`✅ Stock updated for ${item.name}: ${newQuantity}`, updateData);
+                        }
+
+                        // ===== 6d. تسجيل حركة المخزون في جدول stock_movements =====
+                        console.log('📤 Inserting into stock_movements table...');
+                        const { data: movementData, error: movementError } = await supabaseClient
+                            .from('stock_movements')
+                            .insert([{
+                                product_id: item.id,
+                                type: 'out',
+                                quantity: item.quantity,
+                                note: `بيع - فاتورة #${saleId.slice(0, 8)}`,
+                                created_at: new Date().toISOString()
+                            }])
+                            .select();
+
+                        if (movementError) {
+                            console.warn(`⚠️ Failed to record stock movement for ${item.name}:`, movementError);
+                        } else {
+                            console.log(`✅ Stock movement recorded for ${item.name}`, movementData);
+                        }
+                    }
                 }
+            } else {
+                console.log('📄 Draft invoice - stock not deducted');
             }
-            
+
+            showToast('✅ تم إتمام البيع بنجاح!', 'success');
+
         } else if (typeof offlineManager !== 'undefined' && offlineManager) {
+            // ===== 7. وضع غير متصل =====
+            console.log('📴 Offline mode - saving to local DB');
             await offlineManager.saveToLocalDB('sales', sale);
             await offlineManager.saveToLocalDB('sale_items', items);
-            
-            for (const item of cart) {
-                const product = posProducts.find(p => p.id === item.id);
-                if (product) {
-                    product.quantity -= item.quantity;
-                    await offlineManager.saveToLocalDB('products', product);
+
+            if (invoiceType === 'final') {
+                for (const item of cart) {
+                    const product = posProducts.find(p => p.id === item.id);
+                    if (product) {
+                        product.quantity -= item.quantity;
+                        await offlineManager.saveToLocalDB('products', product);
+                    }
                 }
             }
-            
+
             await offlineManager.addPendingOperation({
                 type: 'sale',
                 data: { sale, items, services }
             });
+
             showToast('📴 تم البيع (سيتم المزامنة عند الاتصال)', 'info');
+        } else {
+            showToast('❌ لا يوجد اتصال بالإنترنت ولا يوجد تخزين محلي', 'error');
+            console.error('❌ Checkout: No connection and no offline manager');
+            return;
         }
-        
+
+        // ===== 8. عرض الفاتورة =====
         showReceipt(sale, cart, services, total, invoiceType);
-        
+
+        // ===== 9. تفريغ السلة والخدمات =====
         cart = [];
         services = [];
         updateCart();
-        
+
+        // ===== 10. تحديث البيانات =====
         await loadPOSProducts();
         if (typeof loadDashboardData === 'function') {
             await loadDashboardData();
         }
-        
-        if (navigator.onLine) {
-            showToast('✅ تم إتمام البيع بنجاح', 'success');
-        }
-        
+
     } catch (error) {
         console.error('❌ Checkout error:', error);
-        showToast('⚠️ حدث خطأ في إتمام البيع: ' + (error.message || 'غير معروف'), 'error');
+        showToast(`⚠️ حدث خطأ في إتمام البيع: ${error.message || 'غير معروف'}`, 'error');
     }
 }
 
@@ -1223,3 +1285,4 @@ window.closeEditPriceModal = closeEditPriceModal;
 window.confirmEditPrice = confirmEditPrice;
 
 console.log('✅ POS Module Loaded with Services & Custom Prices');
+console.log('📊 Tables used: products, sales, sale_items, stock_movements');
