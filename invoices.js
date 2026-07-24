@@ -1,5 +1,5 @@
 // ============================================================
-// INVOICES MANAGEMENT
+// INVOICES MANAGEMENT - نسخة محدثة مع إصلاح الطباعة
 // ============================================================
 
 let allInvoices = [];
@@ -120,9 +120,6 @@ function renderInvoices(invoices) {
     }).join('');
 }
 
-// ============================================================
-// عرض تفاصيل الفاتورة
-// ============================================================
 async function viewInvoice(invoiceId) {
     try {
         const invoice = allInvoices.find(i => i.id === invoiceId);
@@ -195,11 +192,10 @@ async function viewInvoice(invoiceId) {
 }
 
 // ============================================================
-// 🖨️ طباعة الفاتورة (النسخة المحسنة - مع رسائل خطأ وحلول بديلة)
+// 🖨️ طباعة الفاتورة (النسخة المحسنة مع رسائل خطأ)
 // ============================================================
 async function printInvoice(invoiceId) {
     try {
-        // 1. التحقق من وجود الفاتورة
         const invoice = allInvoices.find(i => i.id === invoiceId);
         if (!invoice) {
             showToast('⚠️ الفاتورة غير موجودة', 'error');
@@ -207,7 +203,6 @@ async function printInvoice(invoiceId) {
             return;
         }
         
-        // 2. تجهيز بيانات الفاتورة
         const items = invoice.sale_items || [];
         const total = invoice.total || 0;
         const date = new Date(invoice.created_at).toLocaleString('ar-SA');
@@ -216,17 +211,15 @@ async function printInvoice(invoiceId) {
         const invoiceType = invoice.invoice_type || 'final';
         const typeLabel = invoiceType === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
         const customerTitle = `السيد/ ${customerName}`;
-        const statusText = invoiceType === 'final' ? '✅ معتمدة' : '⏳ غير معتمدة';
+        const statusText = invoiceType === 'final' ? 'معتمدة' : 'غير معتمدة';
         
         const itemsWithTotal = items.map(item => ({
             ...item,
             total: item.price * item.quantity
         }));
         
-        // 3. بناء محتوى الفاتورة
         const content = `
             <div class="receipt-print" id="receiptPrintContent">
-                <!-- ===== رأس الفاتورة ===== -->
                 <div class="receipt-header">
                     <div class="company-name">🏷️ JABAL ALSAFA</div>
                     <div class="receipt-title">${typeLabel}</div>
@@ -241,7 +234,6 @@ async function printInvoice(invoiceId) {
                     </div>
                 </div>
                 
-                <!-- ===== جدول المنتجات ===== -->
                 <table class="receipt-table">
                     <thead>
                         <tr>
@@ -263,13 +255,11 @@ async function printInvoice(invoiceId) {
                     </tbody>
                 </table>
                 
-                <!-- ===== المجموع الكلي ===== -->
                 <div class="receipt-total">
                     <span>المجموع الكلي</span>
                     <span class="total-amount">${formatCurrency(total)}</span>
                 </div>
                 
-                <!-- ===== تذييل الفاتورة ===== -->
                 <div class="receipt-footer">
                     <p class="contact-info">📞 للتواصل: 0129321654 - 0922500501</p>
                     <p class="thanks-msg">شكراً لتسوقكم معنا</p>
@@ -278,68 +268,41 @@ async function printInvoice(invoiceId) {
             </div>
         `;
         
-        // 4. محاولة فتح نافذة الطباعة
         const printWindow = window.open('', '_blank', 'width=500,height=700');
-        
-        // 5. إذا تم حظر النافذة المنبثقة
         if (!printWindow) {
             showToast('⚠️ الرجاء السماح للنوافذ المنبثقة (Pop-up) في المتصفح', 'error');
             console.warn('⚠️ printInvoice: Pop-up blocked');
             
-            // ===== حل بديل: استخدام window.print() مباشرة =====
             const shouldUseFallback = confirm(
                 '⚠️ تعذر فتح نافذة الطباعة.\n\n' +
-                'هل تريد طباعة الفاتورة في الصفحة الحالية بدلاً من ذلك؟\n' +
-                '(سيتم إخفاء العناصر غير الضرورية مؤقتاً)'
+                'هل تريد طباعة الفاتورة في الصفحة الحالية بدلاً من ذلك؟'
             );
             
             if (shouldUseFallback) {
-                // إنشاء نسخة مؤقتة من الفاتورة في الصفحة الحالية
+                // إنشاء نسخة مؤقتة للطباعة
                 const tempContainer = document.createElement('div');
                 tempContainer.id = 'tempPrintContainer';
                 tempContainer.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: white;
-                    z-index: 99999;
-                    padding: 40px 20px;
-                    overflow-y: auto;
-                    direction: rtl;
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                    background: white; z-index: 99999; padding: 40px 20px;
+                    overflow-y: auto; direction: rtl;
                 `;
                 tempContainer.innerHTML = content;
                 document.body.appendChild(tempContainer);
                 
-                // إضافة ستايل إضافي للطباعة
                 const style = document.createElement('style');
                 style.textContent = `
-                    @media print {
-                        body * { display: none !important; }
-                        #tempPrintContainer { display: block !important; }
-                        #tempPrintContainer * { display: block !important; }
-                        .receipt-print { 
-                            border: none !important; 
-                            box-shadow: none !important;
-                            padding: 15px !important;
-                            max-width: 100% !important;
-                        }
-                    }
+                    @media print { body * { display: none !important; }
+                    #tempPrintContainer { display: block !important; }
+                    #tempPrintContainer * { display: block !important; } }
                 `;
                 document.head.appendChild(style);
                 
-                // طباعة
                 window.print();
                 
-                // تنظيف بعد الطباعة
                 setTimeout(() => {
-                    if (tempContainer.parentNode) {
-                        tempContainer.remove();
-                    }
-                    if (style.parentNode) {
-                        style.remove();
-                    }
+                    if (tempContainer.parentNode) tempContainer.remove();
+                    if (style.parentNode) style.remove();
                 }, 3000);
                 
                 showToast('🖨️ جاري الطباعة...', 'info');
@@ -347,8 +310,7 @@ async function printInvoice(invoiceId) {
             return;
         }
         
-        // 6. بناء HTML كامل للنافذة الجديدة
-        const htmlContent = `
+        const printHTML = `
             <!DOCTYPE html>
             <html>
                 <head>
@@ -356,7 +318,7 @@ async function printInvoice(invoiceId) {
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>فاتورة #${receiptNumber} - JABAL ALSAFA</title>
                     <style>
-                        /* ===== جميع الأنماط ===== */
+                        /* أنماط الطباعة الاحترافية */
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body {
                             font-family: 'Arial', 'Tahoma', sans-serif;
@@ -550,12 +512,6 @@ async function printInvoice(invoiceId) {
                             font-size: 16px;
                             font-weight: 600;
                             cursor: pointer;
-                            transition: all 0.3s ease;
-                            box-shadow: 0 4px 15px rgba(0,119,182,0.3);
-                        }
-                        .print-btn:hover {
-                            transform: translateY(-2px);
-                            box-shadow: 0 8px 25px rgba(0,119,182,0.4);
                         }
                         .close-btn {
                             display: block;
@@ -569,74 +525,25 @@ async function printInvoice(invoiceId) {
                             font-size: 14px;
                             font-weight: 600;
                             cursor: pointer;
-                            transition: all 0.3s ease;
                         }
-                        .close-btn:hover {
-                            background: #eee;
-                        }
-                        
-                        /* ===== أنماط الطباعة ===== */
                         @media print {
-                            body {
-                                background: white !important;
-                                padding: 5px !important;
-                                margin: 0 !important;
-                                display: block !important;
-                            }
-                            .receipt-print {
-                                border: 1px solid #ddd !important;
-                                box-shadow: none !important;
-                                padding: 15px !important;
-                                max-width: 100% !important;
-                                border-radius: 0 !important;
-                            }
-                            .receipt-table thead th {
-                                background: #f0f0f0 !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-                            .customer-line {
-                                background: #f0f7ff !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-                            .receipt-meta .meta-item {
-                                background: #f5f5f5 !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-                            .receipt-meta .status-final {
-                                background: #e8f5e9 !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-                            .receipt-meta .status-draft {
-                                background: #fff3e0 !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-                            .receipt-total .total-amount {
-                                background: #f0f7ff !important;
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-                            .print-btn, .close-btn {
-                                display: none !important;
-                            }
-                            .no-print {
-                                display: none !important;
-                            }
+                            body { background: white !important; padding: 5px !important; margin: 0 !important; display: block !important; }
+                            .receipt-print { border: 1px solid #ddd !important; box-shadow: none !important; padding: 15px !important; max-width: 100% !important; border-radius: 0 !important; }
+                            .print-btn, .close-btn { display: none !important; }
+                            .receipt-table thead th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                            .customer-line { background: #f0f7ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                            .receipt-meta .meta-item { background: #f5f5f5 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                            .receipt-meta .status-final { background: #e8f5e9 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                            .receipt-meta .status-draft { background: #fff3e0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                            .receipt-total .total-amount { background: #f0f7ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                         }
-                        
-                        /* ===== أنماط الجوال ===== */
                         @media (max-width: 480px) {
                             body { padding: 10px; }
                             .receipt-print { padding: 18px 15px; }
                             .receipt-total { font-size: 16px; }
                             .receipt-total .total-amount { font-size: 18px; }
                             .receipt-table { font-size: 12px; }
-                            .receipt-table thead th,
-                            .receipt-table tbody td { padding: 6px 4px; }
+                            .receipt-table thead th, .receipt-table tbody td { padding: 6px 4px; }
                             .company-name { font-size: 22px; }
                             .receipt-meta { flex-wrap: wrap; gap: 6px; }
                             .customer-line { font-size: 13px; }
@@ -645,29 +552,16 @@ async function printInvoice(invoiceId) {
                 </head>
                 <body>
                     ${content}
-                    
-                    <!-- ===== أزرار التحكم ===== -->
-                    <button class="print-btn no-print" onclick="window.print()">
-                        🖨️ طباعة الفاتورة
-                    </button>
-                    <button class="close-btn no-print" onclick="window.close()">
-                        ✖ إغلاق
-                    </button>
-                    
+                    <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة الفاتورة</button>
+                    <button class="close-btn no-print" onclick="window.close()">✖ إغلاق</button>
                     <script>
-                        // ===== الطباعة التلقائية =====
                         (function() {
-                            // انتظار تحميل الصفحة بالكامل
                             if (document.readyState === 'complete') {
-                                startPrint();
+                                setTimeout(function() { window.print(); }, 800);
                             } else {
-                                window.addEventListener('load', startPrint);
-                            }
-                            
-                            function startPrint() {
-                                setTimeout(function() {
-                                    window.print();
-                                }, 800);
+                                window.addEventListener('load', function() {
+                                    setTimeout(function() { window.print(); }, 800);
+                                });
                             }
                         })();
                     <\/script>
@@ -675,11 +569,8 @@ async function printInvoice(invoiceId) {
             </html>
         `;
         
-        // 7. كتابة المحتوى في النافذة الجديدة
-        printWindow.document.write(htmlContent);
+        printWindow.document.write(printHTML);
         printWindow.document.close();
-        
-        // 8. التركيز على النافذة الجديدة
         printWindow.focus();
         
         showToast('🖨️ جاري فتح نافذة الطباعة...', 'info');
@@ -691,8 +582,196 @@ async function printInvoice(invoiceId) {
 }
 
 // ============================================================
-// إتمام العملية (تحويل فاتورة مبدئية لنهائية)
+// 🖨️ طباعة تفاصيل الفاتورة من النافذة المنبثقة
 // ============================================================
+function printInvoiceDetail() {
+    try {
+        const content = document.getElementById('invoiceDetailContent')?.innerHTML;
+        if (!content || content.trim() === '') {
+            showToast('⚠️ لا يوجد محتوى للطباعة', 'error');
+            console.warn('⚠️ printInvoiceDetail: invoiceDetailContent is empty');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank', 'width=500,height=700');
+        if (!printWindow) {
+            showToast('⚠️ الرجاء السماح للنوافذ المنبثقة (Pop-up) في المتصفح', 'error');
+            console.warn('⚠️ printInvoiceDetail: Pop-up blocked');
+            return;
+        }
+
+        const printHTML = `
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>تفاصيل الفاتورة - JABAL ALSAFA</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body {
+                            font-family: 'Arial', 'Tahoma', sans-serif;
+                            background: #ffffff;
+                            padding: 20px;
+                            display: flex;
+                            justify-content: center;
+                            direction: rtl;
+                        }
+                        .receipt {
+                            max-width: 400px;
+                            width: 100%;
+                            background: white;
+                            padding: 25px;
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                        }
+                        .receipt-header {
+                            text-align: center;
+                            margin-bottom: 20px;
+                            padding-bottom: 15px;
+                            border-bottom: 2px dashed #ddd;
+                        }
+                        .receipt-header h2 {
+                            color: #0077b6;
+                            font-size: 22px;
+                            margin-bottom: 4px;
+                        }
+                        .receipt-header p {
+                            color: #555;
+                            font-size: 14px;
+                            margin: 3px 0;
+                        }
+                        .receipt-header small {
+                            display: block;
+                            color: #999;
+                            font-size: 12px;
+                        }
+                        .receipt-divider {
+                            border-top: 1px dashed #ddd;
+                            margin: 12px 0;
+                        }
+                        .receipt-table-header {
+                            display: grid;
+                            grid-template-columns: 2fr 0.8fr 1fr 1fr;
+                            gap: 5px;
+                            padding: 8px 0;
+                            font-size: 11px;
+                            font-weight: 700;
+                            color: #666;
+                            text-transform: uppercase;
+                            border-bottom: 2px solid #0077b6;
+                        }
+                        .receipt-item {
+                            display: grid;
+                            grid-template-columns: 2fr 0.8fr 1fr 1fr;
+                            gap: 5px;
+                            padding: 6px 0;
+                            font-size: 13px;
+                            color: #333;
+                            border-bottom: 1px solid #f0f0f0;
+                        }
+                        .receipt-item .item-name {
+                            font-weight: 500;
+                            color: #1a1a2e;
+                        }
+                        .receipt-item .item-qty {
+                            text-align: center;
+                            color: #666;
+                        }
+                        .receipt-item .item-price {
+                            text-align: left;
+                            color: #666;
+                        }
+                        .receipt-item .item-total {
+                            text-align: left;
+                            font-weight: 700;
+                            color: #0077b6;
+                        }
+                        .receipt-total {
+                            display: flex;
+                            justify-content: space-between;
+                            padding: 15px 0 10px;
+                            border-top: 3px double #0077b6;
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: #1a1a2e;
+                        }
+                        .receipt-total span:last-child {
+                            color: #0077b6;
+                            font-size: 20px;
+                        }
+                        .receipt-footer {
+                            text-align: center;
+                            margin-top: 15px;
+                            padding-top: 12px;
+                            border-top: 1px solid #eee;
+                            color: #999;
+                            font-size: 12px;
+                        }
+                        .print-btn {
+                            display: block;
+                            width: 100%;
+                            padding: 14px;
+                            margin-top: 15px;
+                            background: linear-gradient(135deg, #0077b6, #005a8c);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        }
+                        .close-btn {
+                            display: block;
+                            width: 100%;
+                            padding: 12px;
+                            margin-top: 8px;
+                            background: #f5f5f5;
+                            color: #555;
+                            border: 1px solid #ddd;
+                            border-radius: 12px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        }
+                        @media print {
+                            body { padding: 0; }
+                            .receipt { border: none; border-radius: 0; padding: 15px; }
+                            .print-btn, .close-btn { display: none !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt">${content}</div>
+                    <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة</button>
+                    <button class="close-btn no-print" onclick="window.close()">✖ إغلاق</button>
+                    <script>
+                        (function() {
+                            if (document.readyState === 'complete') {
+                                setTimeout(function() { window.print(); }, 500);
+                            } else {
+                                window.addEventListener('load', function() {
+                                    setTimeout(function() { window.print(); }, 500);
+                                });
+                            }
+                        })();
+                    <\/script>
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(printHTML);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        showToast('🖨️ جاري فتح نافذة الطباعة...', 'info');
+        
+    } catch (error) {
+        console.error('❌ Error in printInvoiceDetail:', error);
+        showToast('⚠️ حدث خطأ في الطباعة: ' + (error.message || 'غير معروف'), 'error');
+    }
+}
+
 async function completeInvoice(invoiceId) {
     if (!confirm('⚠️ هل أنت متأكد من إتمام هذه العملية؟\nسيتم تحويل الفاتورة المبدئية إلى فاتورة بيع.')) {
         return;
@@ -759,9 +838,6 @@ async function completeInvoice(invoiceId) {
     }
 }
 
-// ============================================================
-// إلغاء الفاتورة
-// ============================================================
 async function cancelInvoice(invoiceId) {
     if (!confirm('⚠️ هل أنت متأكد من إلغاء هذه الفاتورة؟\nسيتم إعادة الكميات إلى المخزون.')) return;
     
@@ -824,9 +900,6 @@ async function cancelInvoice(invoiceId) {
     }
 }
 
-// ============================================================
-// البحث في الفواتير
-// ============================================================
 function searchInvoice() {
     const searchTerm = document.getElementById('invoiceSearchInput')?.value?.toLowerCase() || '';
     const filterDate = document.getElementById('invoiceDateFilter')?.value;
