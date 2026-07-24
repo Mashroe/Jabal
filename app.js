@@ -203,24 +203,14 @@ window.resetSystem = async function() {
 // 💾 BACKUP & RESTORE - النسخة الكاملة (جميع الجداول)
 // ============================================================
 
-// ============================================================
-// 📤 تصدير النسخة الاحتياطية (جميع الجداول)
-// ============================================================
 async function exportBackup() {
     try {
         showToast('⏳ جاري تحضير النسخة الاحتياطية الكاملة...', 'info');
         
         const tables = [
-            'products',
-            'sales', 
-            'sale_items',
-            'customers',
-            'inventory',
-            'purchases',
-            'purchase_items',
-            'stock_movements',
-            'counting_sessions',
-            'counting_items'
+            'products', 'sales', 'sale_items', 'customers', 'inventory',
+            'purchases', 'purchase_items', 'stock_movements',
+            'counting_sessions', 'counting_items'
         ];
         
         const backupData = {};
@@ -289,9 +279,6 @@ async function exportBackup() {
     }
 }
 
-// ============================================================
-// 📥 استعادة النسخة الاحتياطية (جميع الجداول)
-// ============================================================
 async function importBackup(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -422,9 +409,6 @@ async function importBackup(event) {
     event.target.value = '';
 }
 
-// ============================================================
-// تصدير الدوال
-// ============================================================
 window.exportBackup = exportBackup;
 window.importBackup = importBackup;
 
