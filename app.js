@@ -170,7 +170,7 @@ window.resetSystem = async function() {
         showToast('⏳ جاري إعادة تعيين النظام...', 'warning');
         
         if (typeof supabaseClient !== 'undefined') {
-            const tables = ['sale_items', 'sales', 'purchase_items', 'purchases', 'counting_items', 'counting_sessions', 'stock_movements', 'customers', 'products'];
+            const tables = ['sale_items', 'sales', 'purchase_items', 'purchases', 'counting_items', 'counting_sessions', 'stock_movements', 'customers', 'products', 'inventory'];
             for (const table of tables) {
                 try {
                     await supabaseClient.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -180,7 +180,7 @@ window.resetSystem = async function() {
         }
         
         if (offlineManager && offlineManager.db) {
-            const stores = ['products', 'sales', 'sale_items', 'stock_movements', 'pending_operations', 'counting_sessions', 'counting_items', 'customers', 'purchases', 'purchase_items'];
+            const stores = ['products', 'sales', 'sale_items', 'stock_movements', 'pending_operations', 'counting_sessions', 'counting_items', 'customers', 'purchases', 'purchase_items', 'inventory'];
             for (const store of stores) {
                 try {
                     const transaction = offlineManager.db.transaction(store, 'readwrite');
@@ -200,36 +200,72 @@ window.resetSystem = async function() {
 };
 
 // ============================================================
-// BACKUP & RESTORE
+// 💾 BACKUP & RESTORE - النسخة الكاملة (جميع الجداول)
 // ============================================================
 
 // ============================================================
-// تصدير النسخة الاحتياطية
+// 📤 تصدير النسخة الاحتياطية (جميع الجداول)
 // ============================================================
 async function exportBackup() {
     try {
-        showToast('⏳ جاري تحضير النسخة الاحتياطية...', 'info');
+        showToast('⏳ جاري تحضير النسخة الاحتياطية الكاملة...', 'info');
         
-        const tables = ['products', 'sales', 'sale_items', 'customers', 'inventory', 'purchases', 'purchase_items', 'stock_movements'];
+        const tables = [
+            'products',
+            'sales', 
+            'sale_items',
+            'customers',
+            'inventory',
+            'purchases',
+            'purchase_items',
+            'stock_movements',
+            'counting_sessions',
+            'counting_items'
+        ];
+        
         const backupData = {};
+        let totalRecords = 0;
         
         for (const table of tables) {
-            const { data, error } = await supabaseClient
-                .from(table)
-                .select('*');
-            
-            if (error) {
-                console.warn(`⚠️ Could not fetch ${table}:`, error);
+            try {
+                console.log(`📥 Fetching ${table}...`);
+                let data = [];
+                
+                if (navigator.onLine && typeof supabaseClient !== 'undefined') {
+                    const { data: supabaseData, error } = await supabaseClient
+                        .from(table)
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.warn(`⚠️ Could not fetch ${table}:`, error.message);
+                        data = [];
+                    } else {
+                        data = supabaseData || [];
+                    }
+                } else if (typeof offlineManager !== 'undefined' && offlineManager) {
+                    data = await offlineManager.getFromLocalDB(table) || [];
+                } else {
+                    data = [];
+                }
+                
+                backupData[table] = data;
+                totalRecords += data.length;
+                console.log(`✅ ${table}: ${data.length} records`);
+                
+            } catch (error) {
+                console.error(`❌ Error fetching ${table}:`, error);
                 backupData[table] = [];
-            } else {
-                backupData[table] = data || [];
             }
         }
         
         backupData._meta = {
             version: APP_CONFIG.app.version,
             date: new Date().toISOString(),
-            tables: tables
+            tables: tables,
+            totalRecords: totalRecords,
+            appName: APP_CONFIG.app.name,
+            exportedBy: localStorage.getItem('jabal_email') || 'Unknown User'
         };
         
         const json = JSON.stringify(backupData, null, 2);
@@ -238,26 +274,37 @@ async function exportBackup() {
         
         const link = document.createElement('a');
         link.href = url;
-        link.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+        link.download = `backup_${new Date().toISOString().slice(0,10)}_${new Date().toISOString().slice(11,19).replace(/:/g, '-')}.json`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        showToast('✅ تم تحميل النسخة الاحتياطية بنجاح', 'success');
+        showToast(`✅ تم تحميل النسخة الاحتياطية الكاملة (${totalRecords} سجل من ${tables.length} جدول)`, 'success');
+        console.log(`✅ Backup completed: ${totalRecords} records from ${tables.length} tables`);
         
     } catch (error) {
-        console.error('Error exporting backup:', error);
-        showToast('❌ حدث خطأ في تحميل النسخة الاحتياطية', 'error');
+        console.error('❌ Error exporting backup:', error);
+        showToast('⚠️ حدث خطأ في تحميل النسخة الاحتياطية: ' + (error.message || 'غير معروف'), 'error');
     }
 }
 
 // ============================================================
-// استعادة النسخة الاحتياطية
+// 📥 استعادة النسخة الاحتياطية (جميع الجداول)
 // ============================================================
 async function importBackup(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    if (!confirm('⚠️ هل أنت متأكد من استعادة النسخة الاحتياطية؟\nسيتم استبدال جميع البيانات الحالية!')) {
+    if (!confirm(
+        '⚠️ تحذير: استعادة النسخة الاحتياطية\n\n' +
+        'سيتم استبدال جميع البيانات الحالية في الجداول التالية:\n' +
+        '• المنتجات\n• المبيعات\n• العملاء\n• المخزون\n• المشتريات\n' +
+        '• حركات المخزون\n• جلسات الجرد\n\n' +
+        '❗ هذا الإجراء لا يمكن التراجع عنه.\n' +
+        'هل أنت متأكد من المتابعة؟'
+    )) {
+        event.target.value = '';
         return;
     }
     
@@ -269,48 +316,114 @@ async function importBackup(event) {
         
         if (!backupData._meta || !backupData._meta.version) {
             showToast('❌ هذا الملف ليس نسخة احتياطية صالحة', 'error');
+            event.target.value = '';
             return;
         }
         
-        showToast('⏳ جاري استعادة البيانات...', 'info');
+        const tableCount = Object.keys(backupData).filter(k => !k.startsWith('_')).length;
+        const totalRecords = backupData._meta.totalRecords || 0;
+        const backupDate = new Date(backupData._meta.date).toLocaleString('ar-SA');
         
-        const tables = ['products', 'sales', 'sale_items', 'customers', 'inventory', 'purchases', 'purchase_items', 'stock_movements'];
+        if (!confirm(
+            `📋 ملخص النسخة الاحتياطية:\n\n` +
+            `📅 التاريخ: ${backupDate}\n` +
+            `📊 عدد الجداول: ${tableCount}\n` +
+            `📦 عدد السجلات: ${totalRecords}\n` +
+            `🏷️ الإصدار: ${backupData._meta.version}\n\n` +
+            `هل تريد استعادة هذه البيانات؟`
+        )) {
+            event.target.value = '';
+            return;
+        }
+        
+        showToast('⏳ جاري استعادة البيانات... (قد يستغرق بعض الوقت)', 'info');
+        
+        const tables = backupData._meta.tables || [
+            'products', 'sales', 'sale_items', 'customers', 'inventory',
+            'purchases', 'purchase_items', 'stock_movements',
+            'counting_sessions', 'counting_items'
+        ];
+        
+        let restoredCount = 0;
         
         for (const table of tables) {
-            if (backupData[table] && backupData[table].length > 0) {
-                await supabaseClient
-                    .from(table)
-                    .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000');
+            try {
+                const data = backupData[table] || [];
+                if (data.length === 0) continue;
                 
-                const { error } = await supabaseClient
-                    .from(table)
-                    .insert(backupData[table]);
+                console.log(`🔄 Restoring ${table}: ${data.length} records...`);
                 
-                if (error) {
-                    console.warn(`⚠️ Could not restore ${table}:`, error);
-                } else {
-                    console.log(`✅ Restored ${table}: ${backupData[table].length} rows`);
+                if (navigator.onLine && typeof supabaseClient !== 'undefined') {
+                    try {
+                        await supabaseClient
+                            .from(table)
+                            .delete()
+                            .neq('id', '00000000-0000-0000-0000-000000000000');
+                    } catch (e) {
+                        console.warn(`⚠️ Delete error for ${table}:`, e.message);
+                    }
+                    
+                    if (data.length > 0) {
+                        const { error: insertError } = await supabaseClient
+                            .from(table)
+                            .insert(data);
+                        
+                        if (insertError) {
+                            console.error(`❌ Error restoring ${table}:`, insertError);
+                            showToast(`⚠️ فشل استعادة جدول ${table}`, 'warning');
+                        } else {
+                            restoredCount += data.length;
+                            console.log(`✅ Restored ${table}: ${data.length} records`);
+                        }
+                    }
+                    
+                } else if (typeof offlineManager !== 'undefined' && offlineManager) {
+                    for (const record of data) {
+                        await offlineManager.saveToLocalDB(table, record);
+                    }
+                    restoredCount += data.length;
+                    console.log(`📴 Restored ${table}: ${data.length} records (offline)`);
                 }
+                
+            } catch (error) {
+                console.error(`❌ Error restoring ${table}:`, error);
+                showToast(`⚠️ فشل استعادة جدول ${table}`, 'warning');
             }
         }
         
-        showToast('✅ تم استعادة النسخة الاحتياطية بنجاح! جاري تحديث الصفحة...', 'success');
+        if (typeof loadProducts === 'function') await loadProducts();
+        if (typeof loadCustomers === 'function') await loadCustomers();
+        if (typeof loadInventoryData === 'function') await loadInventoryData();
+        if (typeof loadPurchases === 'function') await loadPurchases();
+        if (typeof loadInvoices === 'function') await loadInvoices();
+        if (typeof loadCountingData === 'function') await loadCountingData();
+        if (typeof loadDashboardData === 'function') await loadDashboardData();
+        
+        showToast(`✅ تم استعادة النسخة الاحتياطية بنجاح! (${restoredCount} سجل من ${tables.length} جدول)`, 'success');
+        console.log(`✅ Restore completed: ${restoredCount} records from ${tables.length} tables`);
         
         setTimeout(() => {
+            alert(
+                `✅ تم استعادة النسخة الاحتياطية بنجاح!\n\n` +
+                `📊 عدد السجلات المستعادة: ${restoredCount}\n` +
+                `📋 عدد الجداول: ${tables.length}\n` +
+                `📅 تاريخ النسخة: ${backupDate}\n` +
+                `🏷️ الإصدار: ${backupData._meta.version}\n\n` +
+                `🔄 سيتم تحديث الصفحة لعرض البيانات الجديدة.`
+            );
             window.location.reload();
-        }, 2000);
+        }, 1500);
         
     } catch (error) {
-        console.error('Error importing backup:', error);
-        showToast('❌ حدث خطأ في استعادة النسخة الاحتياطية', 'error');
+        console.error('❌ Error importing backup:', error);
+        showToast('⚠️ حدث خطأ في استعادة النسخة الاحتياطية: ' + (error.message || 'غير معروف'), 'error');
     }
     
     event.target.value = '';
 }
 
 // ============================================================
-// EXPORT BACKUP FUNCTIONS
+// تصدير الدوال
 // ============================================================
 window.exportBackup = exportBackup;
 window.importBackup = importBackup;
