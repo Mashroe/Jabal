@@ -73,7 +73,7 @@
             <div class="backup-section">
                 <button class="btn-primary" onclick="exportBackup()" style="width:100%; justify-content:center; margin-bottom:0.5rem;">
                     <i class="fas fa-download"></i>
-                    💾 نسخة احتياطية
+                    💾 نسخة احتياطية (كاملة)
                 </button>
                 <button class="btn-secondary" onclick="document.getElementById('restoreInput').click()" style="width:100%; justify-content:center;">
                     <i class="fas fa-upload"></i>
@@ -222,7 +222,6 @@
                 </div>
 
                 <div class="pos-cart">
-                    <!-- ===== حقل اسم العميل ===== -->
                     <div class="customer-name-field">
                         <label for="customerName">👤 اسم العميل</label>
                         <div style="position: relative;">
@@ -239,7 +238,6 @@
                         </div>
                     </div>
 
-                    <!-- ===== خيارات نوع الفاتورة ===== -->
                     <div class="invoice-type-section">
                         <label>📄 نوع الفاتورة</label>
                         <div class="invoice-type-options">
@@ -260,6 +258,7 @@
                         <h3><i class="fas fa-shopping-basket"></i> سلة المشتريات</h3>
                         <span id="cartCount">0</span>
                     </div>
+                    
                     <div class="cart-items" id="cartItems">
                         <div class="empty-cart">
                             <i class="fas fa-shopping-basket"></i>
@@ -267,10 +266,32 @@
                             <span>أضف منتجات للبدء</span>
                         </div>
                     </div>
+
+                    <!-- ===== 📦 قسم الخدمات/المصنعية ===== -->
+                    <div class="services-section">
+                        <div class="services-header">
+                            <span><i class="fas fa-tools"></i> خدمات / مصنعية</span>
+                        </div>
+                        <div class="services-input-row">
+                            <input type="text" id="serviceDescription" placeholder="وصف الخدمة..." />
+                            <input type="number" id="servicePrice" placeholder="السعر" step="0.01" min="0" />
+                            <button onclick="addService()" class="btn-primary add-service-btn">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div id="servicesContainer">
+                            <div class="empty-services">لا توجد خدمات مضافة</div>
+                        </div>
+                    </div>
+
                     <div class="cart-summary">
                         <div class="summary-row">
                             <span>المجموع</span>
                             <span id="cartSubtotal">0.00 SDG</span>
+                        </div>
+                        <div class="summary-row services-row">
+                            <span>🛠️ خدمات / مصنعية</span>
+                            <span id="cartServices">0.00 SDG</span>
                         </div>
                         <div class="summary-row">
                             <span>الضريبة (0%)</span>
@@ -923,7 +944,6 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: إضافة/تعديل مخزون منفصل ===== -->
     <div class="modal" id="inventoryModal">
         <div class="modal-content">
             <div class="modal-header">
