@@ -469,7 +469,7 @@ function previewInvoice() {
 }
 
 // ============================================================
-// عرض معاينة الفاتورة
+// عرض معاينة الفاتورة (مع تفاصيل المنتجات والخدمات)
 // ============================================================
 function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -484,9 +484,13 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
     const invoiceTitle = type === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
     const invoiceStatus = '📄 معاينة';
     
+    const hasItems = items && items.length > 0;
+    const hasServices = servicesList && servicesList.length > 0;
+    
     if (body) {
         body.innerHTML = `
             <div class="receipt" id="receiptContent">
+                <!-- ===== رأس الفاتورة ===== -->
                 <div class="receipt-header">
                     <h2>🏷️ JABAL ALSAFA</h2>
                     <p>${invoiceTitle}</p>
@@ -494,33 +498,46 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                     <small>التاريخ: ${date}</small>
                     <small style="color: #ffc800;">${invoiceStatus}</small>
                     <div class="customer-name-display">
-                        <strong>${escapeHtml(customerTitle)}</strong>
+                        <strong>👤 ${escapeHtml(customerTitle)}</strong>
                     </div>
                 </div>
+                
                 <div class="receipt-divider"></div>
                 
+                <!-- ===== جدول المنتجات ===== -->
                 <div class="receipt-table-header">
                     <span>الصنف</span>
                     <span>الكمية</span>
                     <span>السعر</span>
                     <span>الإجمالي</span>
                 </div>
+                
                 <div class="receipt-divider"></div>
                 
                 <div class="receipt-items">
-                    ${items.map(item => {
+                    ${hasItems ? items.map(item => {
                         const price = item.isCustomPrice ? item.customPrice : item.price;
+                        const itemName = item.name || item.product_name || 'منتج';
+                        const isModified = item.isCustomPrice;
                         return `
                             <div class="receipt-item">
-                                <span class="item-name">${escapeHtml(item.name || item.product_name || 'منتج')}</span>
+                                <span class="item-name">
+                                    ${escapeHtml(itemName)}
+                                    ${isModified ? '<span style="color: #ffc800; font-size: 0.7rem;"> (معدّل)</span>' : ''}
+                                </span>
                                 <span class="item-qty">${item.quantity}</span>
                                 <span class="item-price">${formatCurrency(price)}</span>
                                 <span class="item-total">${formatCurrency(price * item.quantity)}</span>
                             </div>
                         `;
-                    }).join('')}
+                    }).join('') : `
+                        <div class="receipt-item" style="color: rgba(255,255,255,0.3); text-align: center; grid-column: span 4;">
+                            ⚠️ لا توجد منتجات
+                        </div>
+                    `}
                     
-                    ${servicesList && servicesList.length > 0 ? `
+                    <!-- ===== الخدمات ===== -->
+                    ${hasServices ? `
                         <div class="receipt-divider"></div>
                         <div style="padding: 0.5rem 0; color: #ffc800; font-weight: 600; font-size: 0.9rem;">
                             🛠️ خدمات / مصنعية
@@ -538,6 +555,7 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                 
                 <div class="receipt-divider"></div>
                 
+                <!-- ===== ملخص الفاتورة ===== -->
                 ${servicesTotal > 0 ? `
                     <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.9rem; color: rgba(255,255,255,0.5);">
                         <span>المجموع</span>
@@ -554,12 +572,14 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                     <span>${formatCurrency(total)}</span>
                 </div>
                 
+                <!-- ===== تذييل الفاتورة ===== -->
                 <div class="receipt-footer">
                     <small style="color: #ffc800;">⚠️ هذه معاينة للفاتورة، لم تتم العملية بعد</small>
                 </div>
             </div>
         `;
         
+        // ===== أزرار المعاينة =====
         const actions = document.querySelector('#receiptModal .modal-actions');
         if (actions) {
             actions.innerHTML = `
@@ -575,15 +595,6 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
         }
     }
     if (modal) modal.classList.add('active');
-}
-
-function closeReceiptPreview() {
-    document.getElementById('receiptModal').classList.remove('active');
-}
-
-function closeReceiptPreviewAndCheckout() {
-    document.getElementById('receiptModal').classList.remove('active');
-    checkout();
 }
 
 // ============================================================
