@@ -1,6 +1,5 @@
 // ============================================================
 // POS SYSTEM - النسخة النهائية مع الخدمات وتعديل الأسعار
-// مع التأكد من جميع الجداول في Supabase
 // ============================================================
 
 let posProducts = [];
@@ -521,7 +520,7 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                         `;
                     }).join('')}
                     
-                    ${servicesList.length > 0 ? `
+                    ${servicesList && servicesList.length > 0 ? `
                         <div class="receipt-divider"></div>
                         <div style="padding: 0.5rem 0; color: #ffc800; font-weight: 600; font-size: 0.9rem;">
                             🛠️ خدمات / مصنعية
@@ -785,7 +784,7 @@ async function checkout() {
 }
 
 // ============================================================
-// عرض الفاتورة النهائية (بدون إشارة للتعديل)
+// عرض الفاتورة النهائية (مع الخدمات والتعديلات)
 // ============================================================
 function showReceipt(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -828,7 +827,10 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
                         const price = item.isCustomPrice ? item.customPrice : item.price;
                         return `
                             <div class="receipt-item">
-                                <span class="item-name">${escapeHtml(item.name || item.product_name || 'منتج')}</span>
+                                <span class="item-name">
+                                    ${escapeHtml(item.name || item.product_name || 'منتج')}
+                                    ${item.isCustomPrice ? '<span style="color: #ffc800; font-size: 0.7rem;"> (معدّل)</span>' : ''}
+                                </span>
                                 <span class="item-qty">${item.quantity}</span>
                                 <span class="item-price">${formatCurrency(price)}</span>
                                 <span class="item-total">${formatCurrency(price * item.quantity)}</span>
@@ -836,7 +838,7 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
                         `;
                     }).join('')}
                     
-                    ${servicesList.length > 0 ? `
+                    ${servicesList && servicesList.length > 0 ? `
                         <div class="receipt-divider"></div>
                         <div style="padding: 0.5rem 0; color: #ffc800; font-weight: 600; font-size: 0.9rem;">
                             🛠️ خدمات / مصنعية
@@ -882,56 +884,20 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
 }
 
 // ============================================================
-// 🖨️ طباعة الفاتورة
+// 🖨️ طباعة الفاتورة (مع الخدمات والتعديلات)
 // ============================================================
 function printReceipt() {
     try {
+        // جلب محتوى الفاتورة من الـ DOM
         const receiptContent = document.getElementById('receiptBody')?.innerHTML;
         if (!receiptContent || receiptContent.trim() === '') {
-            showToast('⚠️ لا يوجد محتوى للطباعة. يرجى إنشاء فاتورة أولاً.', 'error');
-            console.warn('⚠️ printReceipt: receiptBody is empty');
+            showToast('⚠️ لا يوجد محتوى للطباعة', 'error');
             return;
         }
 
         const printWindow = window.open('', '_blank', 'width=500,height=700');
-        
         if (!printWindow) {
-            showToast('⚠️ الرجاء السماح للنوافذ المنبثقة (Pop-up) في المتصفح', 'error');
-            
-            const shouldUseFallback = confirm(
-                '⚠️ تعذر فتح نافذة الطباعة.\n\n' +
-                'هل تريد طباعة الفاتورة في الصفحة الحالية بدلاً من ذلك؟\n' +
-                '(سيتم إخفاء العناصر غير الضرورية مؤقتاً)'
-            );
-            
-            if (shouldUseFallback) {
-                const sidebar = document.querySelector('.sidebar');
-                const topbar = document.querySelector('.topbar');
-                const quickActions = document.querySelector('.quick-actions');
-                const modalActions = document.querySelector('#receiptModal .modal-actions');
-                const modalHeader = document.querySelector('#receiptModal .modal-header');
-                const modalClose = document.querySelector('#receiptModal .modal-close');
-                
-                if (sidebar) sidebar.style.display = 'none';
-                if (topbar) topbar.style.display = 'none';
-                if (quickActions) quickActions.style.display = 'none';
-                if (modalActions) modalActions.style.display = 'none';
-                if (modalHeader) modalHeader.style.display = 'none';
-                if (modalClose) modalClose.style.display = 'none';
-                
-                window.print();
-                
-                setTimeout(() => {
-                    if (sidebar) sidebar.style.display = '';
-                    if (topbar) topbar.style.display = '';
-                    if (quickActions) quickActions.style.display = '';
-                    if (modalActions) modalActions.style.display = '';
-                    if (modalHeader) modalHeader.style.display = '';
-                    if (modalClose) modalClose.style.display = '';
-                }, 1000);
-                
-                showToast('🖨️ جاري الطباعة...', 'info');
-            }
+            showToast('⚠️ الرجاء السماح للنوافذ المنبثقة', 'error');
             return;
         }
 
@@ -940,29 +906,24 @@ function printReceipt() {
             <html>
                 <head>
                     <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>فاتورة البيع - JABAL ALSAFA</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body {
                             font-family: 'Arial', 'Tahoma', sans-serif;
-                            background: #f0f2f5;
+                            background: white;
                             padding: 30px 20px;
                             display: flex;
                             justify-content: center;
-                            align-items: center;
-                            min-height: 100vh;
                             direction: rtl;
                         }
                         .receipt {
                             max-width: 420px;
                             width: 100%;
-                            margin: 0 auto;
                             background: #ffffff;
                             padding: 35px 30px;
                             border: 2px solid #1a1a2e;
                             border-radius: 20px;
-                            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
                         }
                         .receipt-header {
                             text-align: center;
@@ -974,7 +935,6 @@ function printReceipt() {
                             font-size: 28px;
                             font-weight: 900;
                             color: #0077b6;
-                            letter-spacing: 1px;
                             margin-bottom: 4px;
                         }
                         .receipt-header p {
@@ -992,7 +952,7 @@ function printReceipt() {
                         .customer-name-display {
                             margin-top: 12px;
                             padding: 10px 16px;
-                            background: linear-gradient(135deg, #f0f7ff, #e3eeff);
+                            background: #f0f7ff;
                             border-radius: 12px;
                             border-right: 4px solid #0077b6;
                         }
@@ -1079,24 +1039,28 @@ function printReceipt() {
                             font-weight: 500;
                             margin: 4px 0;
                         }
+                        .service-item-print {
+                            color: #ffc800;
+                            border-bottom: 1px solid #f0f0f0;
+                        }
+                        .service-item-print .item-name {
+                            color: #ffc800;
+                        }
+                        .service-item-print .item-total {
+                            color: #ffc800;
+                        }
                         .print-btn {
                             display: block;
                             width: 100%;
                             padding: 14px;
                             margin-top: 15px;
-                            background: linear-gradient(135deg, #0077b6, #005a8c);
+                            background: #0077b6;
                             color: white;
                             border: none;
                             border-radius: 12px;
                             font-size: 16px;
                             font-weight: 600;
                             cursor: pointer;
-                            transition: all 0.3s ease;
-                            box-shadow: 0 4px 15px rgba(0,119,182,0.3);
-                        }
-                        .print-btn:hover {
-                            transform: translateY(-2px);
-                            box-shadow: 0 8px 25px rgba(0,119,182,0.4);
                         }
                         .close-btn {
                             display: block;
@@ -1110,25 +1074,14 @@ function printReceipt() {
                             font-size: 14px;
                             font-weight: 600;
                             cursor: pointer;
-                            transition: all 0.3s ease;
-                        }
-                        .close-btn:hover {
-                            background: #eee;
                         }
                         @media print {
-                            body { background: white !important; padding: 5px !important; margin: 0 !important; display: block !important; }
+                            body { padding: 5px !important; margin: 0 !important; display: block !important; }
                             .receipt { border: 1px solid #ddd !important; box-shadow: none !important; padding: 15px !important; max-width: 100% !important; border-radius: 0 !important; }
                             .print-btn, .close-btn { display: none !important; }
                             .customer-name-display { background: #f0f7ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                             .receipt-total span:last-child { background: #f0f7ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                        }
-                        @media (max-width: 480px) {
-                            body { padding: 10px; }
-                            .receipt { padding: 18px 15px; }
-                            .receipt-total { font-size: 16px; }
-                            .receipt-total span:last-child { font-size: 18px; }
-                            .receipt-item { font-size: 12px; padding: 4px 0; }
-                            .receipt-header h2 { font-size: 22px; }
+                            .service-item-print { color: #ffc800 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                         }
                     </style>
                 </head>
@@ -1141,12 +1094,11 @@ function printReceipt() {
                     <script>
                         (function() {
                             if (document.readyState === 'complete') {
-                                startPrint();
-                            } else {
-                                window.addEventListener('load', startPrint);
-                            }
-                            function startPrint() {
                                 setTimeout(function() { window.print(); }, 800);
+                            } else {
+                                window.addEventListener('load', function() {
+                                    setTimeout(function() { window.print(); }, 800);
+                                });
                             }
                         })();
                     <\/script>
@@ -1162,7 +1114,7 @@ function printReceipt() {
         
     } catch (error) {
         console.error('❌ Error in printReceipt:', error);
-        showToast('⚠️ حدث خطأ في الطباعة: ' + (error.message || 'غير معروف'), 'error');
+        showToast('⚠️ حدث خطأ في الطباعة', 'error');
     }
 }
 
