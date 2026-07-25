@@ -1,5 +1,5 @@
 // ============================================================
-// POS SYSTEM - النسخة النهائية مع الخدمات وتعديل الأسعار
+// POS SYSTEM - النسخة الكاملة مع الخدمات وتعديل الأسعار
 // ============================================================
 
 let posProducts = [];
@@ -490,7 +490,6 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
     if (body) {
         body.innerHTML = `
             <div class="receipt" id="receiptContent">
-                <!-- ===== رأس الفاتورة ===== -->
                 <div class="receipt-header">
                     <h2>🏷️ JABAL ALSAFA</h2>
                     <p>${invoiceTitle}</p>
@@ -501,49 +500,29 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                         <strong>👤 ${escapeHtml(customerTitle)}</strong>
                     </div>
                 </div>
-                
                 <div class="receipt-divider"></div>
-                
-                <!-- ===== جدول المنتجات ===== -->
                 <div class="receipt-table-header">
-                    <span>الصنف</span>
-                    <span>الكمية</span>
-                    <span>السعر</span>
-                    <span>الإجمالي</span>
+                    <span>الصنف</span><span>الكمية</span><span>السعر</span><span>الإجمالي</span>
                 </div>
-                
                 <div class="receipt-divider"></div>
-                
                 <div class="receipt-items">
                     ${hasItems ? items.map(item => {
                         const price = item.isCustomPrice ? item.customPrice : item.price;
                         const itemName = item.name || item.product_name || 'منتج';
-                        const isModified = item.isCustomPrice;
                         return `
                             <div class="receipt-item">
-                                <span class="item-name">
-                                    ${escapeHtml(itemName)}
-                                    ${isModified ? '<span style="color: #ffc800; font-size: 0.7rem;"> (معدّل)</span>' : ''}
-                                </span>
+                                <span class="item-name">${escapeHtml(itemName)}${item.isCustomPrice ? ' <span style="color:#ffc800;font-size:0.7rem;">(معدّل)</span>' : ''}</span>
                                 <span class="item-qty">${item.quantity}</span>
                                 <span class="item-price">${formatCurrency(price)}</span>
                                 <span class="item-total">${formatCurrency(price * item.quantity)}</span>
                             </div>
                         `;
-                    }).join('') : `
-                        <div class="receipt-item" style="color: rgba(255,255,255,0.3); text-align: center; grid-column: span 4;">
-                            ⚠️ لا توجد منتجات
-                        </div>
-                    `}
-                    
-                    <!-- ===== الخدمات ===== -->
+                    }).join('') : `<div class="receipt-item" style="color:rgba(255,255,255,0.3);text-align:center;grid-column:span 4;">⚠️ لا توجد منتجات</div>`}
                     ${hasServices ? `
                         <div class="receipt-divider"></div>
-                        <div style="padding: 0.5rem 0; color: #ffc800; font-weight: 600; font-size: 0.9rem;">
-                            🛠️ خدمات / مصنعية
-                        </div>
+                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">🛠️ خدمات / مصنعية</div>
                         ${servicesList.map(service => `
-                            <div class="receipt-item" style="color: #ffc800;">
+                            <div class="receipt-item" style="color:#ffc800;">
                                 <span class="item-name">${escapeHtml(service.description)}</span>
                                 <span class="item-qty">1</span>
                                 <span class="item-price">${formatCurrency(service.price)}</span>
@@ -552,85 +531,69 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                         `).join('')}
                     ` : ''}
                 </div>
-                
                 <div class="receipt-divider"></div>
-                
-                <!-- ===== ملخص الفاتورة ===== -->
                 ${servicesTotal > 0 ? `
-                    <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.9rem; color: rgba(255,255,255,0.5);">
-                        <span>المجموع</span>
-                        <span>${formatCurrency(subtotal)}</span>
+                    <div style="display:flex;justify-content:space-between;padding:0.3rem 0;font-size:0.9rem;color:rgba(255,255,255,0.5);">
+                        <span>المجموع</span><span>${formatCurrency(subtotal)}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.9rem; color: #ffc800;">
-                        <span>🛠️ خدمات / مصنعية</span>
-                        <span>${formatCurrency(servicesTotal)}</span>
+                    <div style="display:flex;justify-content:space-between;padding:0.3rem 0;font-size:0.9rem;color:#ffc800;">
+                        <span>🛠️ خدمات / مصنعية</span><span>${formatCurrency(servicesTotal)}</span>
                     </div>
                 ` : ''}
-                
                 <div class="receipt-total">
-                    <span>المجموع الكلي</span>
-                    <span>${formatCurrency(total)}</span>
+                    <span>المجموع الكلي</span><span>${formatCurrency(total)}</span>
                 </div>
-                
-                <!-- ===== تذييل الفاتورة ===== -->
                 <div class="receipt-footer">
-                    <small style="color: #ffc800;">⚠️ هذه معاينة للفاتورة، لم تتم العملية بعد</small>
+                    <small style="color:#ffc800;">⚠️ هذه معاينة للفاتورة، لم تتم العملية بعد</small>
                 </div>
             </div>
         `;
-        
-        // ===== أزرار المعاينة =====
         const actions = document.querySelector('#receiptModal .modal-actions');
         if (actions) {
             actions.innerHTML = `
-                <button class="btn-secondary" onclick="closeReceiptPreview()">
-                    <i class="fas fa-times"></i>
-                    إغلاق
-                </button>
-                <button class="btn-primary" onclick="closeReceiptPreviewAndCheckout()">
-                    <i class="fas fa-check"></i>
-                    تأكيد وإتمام البيع
-                </button>
+                <button class="btn-secondary" onclick="closeReceiptPreview()"><i class="fas fa-times"></i> إغلاق</button>
+                <button class="btn-primary" onclick="closeReceiptPreviewAndCheckout()"><i class="fas fa-check"></i> تأكيد وإتمام البيع</button>
             `;
         }
     }
     if (modal) modal.classList.add('active');
 }
 
+function closeReceiptPreview() {
+    document.getElementById('receiptModal').classList.remove('active');
+}
+
+function closeReceiptPreviewAndCheckout() {
+    document.getElementById('receiptModal').classList.remove('active');
+    checkout();
+}
+
 // ============================================================
-// ✅ إتمام البيع (نسخة محسنة مع التأكد من الجداول)
+// ✅ إتمام البيع
 // ============================================================
 async function checkout() {
-    // ===== 1. التحقق من وجود منتجات أو خدمات =====
     if (cart.length === 0 && services.length === 0) {
         showToast('⚠️ السلة فارغة. أضف منتجات أو خدمات أولاً', 'error');
-        console.warn('⚠️ Checkout: Cart is empty');
         return;
     }
 
-    // ===== 2. التحقق من وجود Supabase =====
     if (typeof supabaseClient === 'undefined') {
         showToast('❌ خطأ في الاتصال بقاعدة البيانات', 'error');
-        console.error('❌ Checkout: supabaseClient is not defined');
         return;
     }
 
-    // ===== 3. التحقق من المخزون =====
     for (const item of cart) {
         const product = posProducts.find(p => p.id === item.id);
         if (!product) {
             showToast(`❌ المنتج ${item.name} غير موجود في النظام`, 'error');
-            console.error(`❌ Checkout: Product ${item.name} not found`);
             return;
         }
         if (product.quantity < item.quantity) {
             showToast(`⚠️ الكمية المطلوبة من ${item.name} غير متوفرة\nالمتوفر: ${product.quantity} | المطلوب: ${item.quantity}`, 'error');
-            console.warn(`⚠️ Checkout: Insufficient stock for ${item.name}`);
             return;
         }
     }
 
-    // ===== 4. محاولة إتمام البيع =====
     try {
         showToast('⏳ جاري إتمام البيع...', 'info');
         
@@ -640,7 +603,6 @@ async function checkout() {
         const customerNameInput = document.getElementById('customerName');
         const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
 
-        // ===== 5. تجهيز بيانات الفاتورة =====
         const sale = {
             id: saleId,
             total: total,
@@ -667,88 +629,57 @@ async function checkout() {
 
         console.log('📦 Sale data:', JSON.stringify(sale, null, 2));
         console.log('📦 Items data:', JSON.stringify(items, null, 2));
-        console.log('🛠️ Services:', JSON.stringify(services, null, 2));
 
         lastSaleData = { sale, items, services, total };
 
-        // ===== 6. حفظ البيانات =====
         if (navigator.onLine) {
-            // ===== 6a. حفظ المبيع في جدول sales =====
-            console.log('📤 Inserting into sales table...');
-            const { data: saleData, error: saleError } = await supabaseClient
+            const { error: saleError } = await supabaseClient
                 .from('sales')
-                .insert([sale])
-                .select();
-
+                .insert([sale]);
+            
             if (saleError) {
                 console.error('❌ Sale error:', saleError);
                 showToast(`❌ فشل حفظ الفاتورة: ${saleError.message}`, 'error');
                 throw saleError;
             }
-            console.log('✅ Sale saved successfully:', saleData);
-
-            // ===== 6b. حفظ عناصر المبيع في جدول sale_items =====
-            console.log('📤 Inserting into sale_items table...');
-            const { data: itemsData, error: itemsError } = await supabaseClient
+            
+            const { error: itemsError } = await supabaseClient
                 .from('sale_items')
-                .insert(items)
-                .select();
-
+                .insert(items);
+            
             if (itemsError) {
                 console.error('❌ Items error:', itemsError);
                 showToast(`❌ فشل حفظ عناصر الفاتورة: ${itemsError.message}`, 'error');
                 throw itemsError;
             }
-            console.log('✅ Sale items saved successfully:', itemsData);
 
-            // ===== 6c. تحديث المخزون (فقط للفاتورة النهائية) =====
             if (invoiceType === 'final') {
-                console.log('📤 Updating products table...');
                 for (const item of cart) {
                     const product = posProducts.find(p => p.id === item.id);
                     if (product) {
                         const newQuantity = product.quantity - item.quantity;
-                        const { data: updateData, error: updateError } = await supabaseClient
+                        await supabaseClient
                             .from('products')
                             .update({ quantity: newQuantity })
-                            .eq('id', item.id)
-                            .select();
-
-                        if (updateError) {
-                            console.warn(`⚠️ Failed to update stock for ${item.name}:`, updateError);
-                        } else {
-                            console.log(`✅ Stock updated for ${item.name}: ${newQuantity}`, updateData);
-                        }
-
-                        // ===== 6d. تسجيل حركة المخزون في جدول stock_movements =====
-                        console.log('📤 Inserting into stock_movements table...');
-                        const { data: movementData, error: movementError } = await supabaseClient
+                            .eq('id', item.id);
+                        
+                        product.quantity = newQuantity;
+                        
+                        await supabaseClient
                             .from('stock_movements')
                             .insert([{
                                 product_id: item.id,
                                 type: 'out',
                                 quantity: item.quantity,
-                                note: `بيع - فاتورة #${saleId.slice(0, 8)}`,
-                                created_at: new Date().toISOString()
-                            }])
-                            .select();
-
-                        if (movementError) {
-                            console.warn(`⚠️ Failed to record stock movement for ${item.name}:`, movementError);
-                        } else {
-                            console.log(`✅ Stock movement recorded for ${item.name}`, movementData);
-                        }
+                                note: `بيع - فاتورة #${saleId.slice(0, 8)}`
+                            }]);
                     }
                 }
-            } else {
-                console.log('📄 Draft invoice - stock not deducted');
             }
 
             showToast('✅ تم إتمام البيع بنجاح!', 'success');
 
         } else if (typeof offlineManager !== 'undefined' && offlineManager) {
-            // ===== 7. وضع غير متصل =====
-            console.log('📴 Offline mode - saving to local DB');
             await offlineManager.saveToLocalDB('sales', sale);
             await offlineManager.saveToLocalDB('sale_items', items);
 
@@ -770,19 +701,18 @@ async function checkout() {
             showToast('📴 تم البيع (سيتم المزامنة عند الاتصال)', 'info');
         } else {
             showToast('❌ لا يوجد اتصال بالإنترنت ولا يوجد تخزين محلي', 'error');
-            console.error('❌ Checkout: No connection and no offline manager');
             return;
         }
 
-        // ===== 8. عرض الفاتورة =====
+        // ===== عرض الفاتورة =====
         showReceipt(sale, cart, services, total, invoiceType);
 
-        // ===== 9. تفريغ السلة والخدمات =====
+        // ===== تفريغ السلة =====
         cart = [];
         services = [];
         updateCart();
 
-        // ===== 10. تحديث البيانات =====
+        // ===== تحديث البيانات =====
         await loadPOSProducts();
         if (typeof loadDashboardData === 'function') {
             await loadDashboardData();
@@ -795,7 +725,7 @@ async function checkout() {
 }
 
 // ============================================================
-// عرض الفاتورة النهائية (مع الخدمات والتعديلات)
+// عرض الفاتورة النهائية (مع تفاصيل المنتجات والخدمات)
 // ============================================================
 function showReceipt(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -810,6 +740,9 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
     const invoiceTitle = type === 'final' ? 'فاتورة بيع' : 'فاتورة مبدئية';
     const invoiceStatus = type === 'final' ? '✅ معتمدة' : '⏳ غير معتمدة';
     
+    const hasItems = items && items.length > 0;
+    const hasServices = servicesList && servicesList.length > 0;
+    
     if (body) {
         body.innerHTML = `
             <div class="receipt" id="receiptContent">
@@ -820,42 +753,32 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
                     <small>التاريخ: ${date}</small>
                     <small>الحالة: ${invoiceStatus}</small>
                     <div class="customer-name-display">
-                        <strong>${escapeHtml(customerTitle)}</strong>
+                        <strong>👤 ${escapeHtml(customerTitle)}</strong>
                     </div>
                 </div>
                 <div class="receipt-divider"></div>
-                
                 <div class="receipt-table-header">
-                    <span>الصنف</span>
-                    <span>الكمية</span>
-                    <span>السعر</span>
-                    <span>الإجمالي</span>
+                    <span>الصنف</span><span>الكمية</span><span>السعر</span><span>الإجمالي</span>
                 </div>
                 <div class="receipt-divider"></div>
-                
                 <div class="receipt-items">
-                    ${items.map(item => {
+                    ${hasItems ? items.map(item => {
                         const price = item.isCustomPrice ? item.customPrice : item.price;
+                        const itemName = item.name || item.product_name || 'منتج';
                         return `
                             <div class="receipt-item">
-                                <span class="item-name">
-                                    ${escapeHtml(item.name || item.product_name || 'منتج')}
-                                    ${item.isCustomPrice ? '<span style="color: #ffc800; font-size: 0.7rem;"> (معدّل)</span>' : ''}
-                                </span>
+                                <span class="item-name">${escapeHtml(itemName)}${item.isCustomPrice ? ' <span style="color:#ffc800;font-size:0.7rem;">(معدّل)</span>' : ''}</span>
                                 <span class="item-qty">${item.quantity}</span>
                                 <span class="item-price">${formatCurrency(price)}</span>
                                 <span class="item-total">${formatCurrency(price * item.quantity)}</span>
                             </div>
                         `;
-                    }).join('')}
-                    
-                    ${servicesList && servicesList.length > 0 ? `
+                    }).join('') : `<div class="receipt-item" style="color:rgba(255,255,255,0.3);text-align:center;grid-column:span 4;">⚠️ لا توجد منتجات</div>`}
+                    ${hasServices ? `
                         <div class="receipt-divider"></div>
-                        <div style="padding: 0.5rem 0; color: #ffc800; font-weight: 600; font-size: 0.9rem;">
-                            🛠️ خدمات / مصنعية
-                        </div>
+                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">🛠️ خدمات / مصنعية</div>
                         ${servicesList.map(service => `
-                            <div class="receipt-item" style="color: #ffc800;">
+                            <div class="receipt-item" style="color:#ffc800;">
                                 <span class="item-name">${escapeHtml(service.description)}</span>
                                 <span class="item-qty">1</span>
                                 <span class="item-price">${formatCurrency(service.price)}</span>
@@ -864,28 +787,20 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
                         `).join('')}
                     ` : ''}
                 </div>
-                
                 <div class="receipt-divider"></div>
-                
                 ${servicesTotal > 0 ? `
-                    <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.9rem; color: rgba(255,255,255,0.5);">
-                        <span>المجموع</span>
-                        <span>${formatCurrency(subtotal)}</span>
+                    <div style="display:flex;justify-content:space-between;padding:0.3rem 0;font-size:0.9rem;color:rgba(255,255,255,0.5);">
+                        <span>المجموع</span><span>${formatCurrency(subtotal)}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.9rem; color: #ffc800;">
-                        <span>🛠️ خدمات / مصنعية</span>
-                        <span>${formatCurrency(servicesTotal)}</span>
+                    <div style="display:flex;justify-content:space-between;padding:0.3rem 0;font-size:0.9rem;color:#ffc800;">
+                        <span>🛠️ خدمات / مصنعية</span><span>${formatCurrency(servicesTotal)}</span>
                     </div>
                 ` : ''}
-                
                 <div class="receipt-total">
-                    <span>المجموع الكلي</span>
-                    <span>${formatCurrency(total)}</span>
+                    <span>المجموع الكلي</span><span>${formatCurrency(total)}</span>
                 </div>
-                
                 <div class="receipt-footer">
-                    <small>📞 للتواصل: 0129321654 - 0922500501</small>
-                    <br>
+                    <small>📞 للتواصل: 0129321654 - 0922500501</small><br>
                     <small>شكراً لتسوقكم معنا</small>
                 </div>
             </div>
@@ -895,20 +810,55 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
 }
 
 // ============================================================
-// 🖨️ طباعة الفاتورة (مع الخدمات والتعديلات)
+// 🖨️ طباعة الفاتورة
 // ============================================================
 function printReceipt() {
     try {
-        // جلب محتوى الفاتورة من الـ DOM
         const receiptContent = document.getElementById('receiptBody')?.innerHTML;
         if (!receiptContent || receiptContent.trim() === '') {
-            showToast('⚠️ لا يوجد محتوى للطباعة', 'error');
+            showToast('⚠️ لا يوجد محتوى للطباعة. يرجى إنشاء فاتورة أولاً.', 'error');
             return;
         }
 
         const printWindow = window.open('', '_blank', 'width=500,height=700');
+        
         if (!printWindow) {
-            showToast('⚠️ الرجاء السماح للنوافذ المنبثقة', 'error');
+            showToast('⚠️ الرجاء السماح للنوافذ المنبثقة (Pop-up) في المتصفح', 'error');
+            
+            const shouldUseFallback = confirm(
+                '⚠️ تعذر فتح نافذة الطباعة.\n\n' +
+                'هل تريد طباعة الفاتورة في الصفحة الحالية بدلاً من ذلك؟\n' +
+                '(سيتم إخفاء العناصر غير الضرورية مؤقتاً)'
+            );
+            
+            if (shouldUseFallback) {
+                const sidebar = document.querySelector('.sidebar');
+                const topbar = document.querySelector('.topbar');
+                const quickActions = document.querySelector('.quick-actions');
+                const modalActions = document.querySelector('#receiptModal .modal-actions');
+                const modalHeader = document.querySelector('#receiptModal .modal-header');
+                const modalClose = document.querySelector('#receiptModal .modal-close');
+                
+                if (sidebar) sidebar.style.display = 'none';
+                if (topbar) topbar.style.display = 'none';
+                if (quickActions) quickActions.style.display = 'none';
+                if (modalActions) modalActions.style.display = 'none';
+                if (modalHeader) modalHeader.style.display = 'none';
+                if (modalClose) modalClose.style.display = 'none';
+                
+                window.print();
+                
+                setTimeout(() => {
+                    if (sidebar) sidebar.style.display = '';
+                    if (topbar) topbar.style.display = '';
+                    if (quickActions) quickActions.style.display = '';
+                    if (modalActions) modalActions.style.display = '';
+                    if (modalHeader) modalHeader.style.display = '';
+                    if (modalClose) modalClose.style.display = '';
+                }, 1000);
+                
+                showToast('🖨️ جاري الطباعة...', 'info');
+            }
             return;
         }
 
@@ -917,6 +867,7 @@ function printReceipt() {
             <html>
                 <head>
                     <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>فاتورة البيع - JABAL ALSAFA</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1050,16 +1001,6 @@ function printReceipt() {
                             font-weight: 500;
                             margin: 4px 0;
                         }
-                        .service-item-print {
-                            color: #ffc800;
-                            border-bottom: 1px solid #f0f0f0;
-                        }
-                        .service-item-print .item-name {
-                            color: #ffc800;
-                        }
-                        .service-item-print .item-total {
-                            color: #ffc800;
-                        }
                         .print-btn {
                             display: block;
                             width: 100%;
@@ -1092,7 +1033,6 @@ function printReceipt() {
                             .print-btn, .close-btn { display: none !important; }
                             .customer-name-display { background: #f0f7ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                             .receipt-total span:last-child { background: #f0f7ff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                            .service-item-print { color: #ffc800 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                         }
                     </style>
                 </head>
@@ -1125,7 +1065,7 @@ function printReceipt() {
         
     } catch (error) {
         console.error('❌ Error in printReceipt:', error);
-        showToast('⚠️ حدث خطأ في الطباعة', 'error');
+        showToast('⚠️ حدث خطأ في الطباعة: ' + (error.message || 'غير معروف'), 'error');
     }
 }
 
