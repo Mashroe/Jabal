@@ -469,7 +469,7 @@ function previewInvoice() {
 }
 
 // ============================================================
-// عرض معاينة الفاتورة (مع تفاصيل المنتجات والخدمات)
+// عرض معاينة الفاتورة (مع تفاصيل كاملة)
 // ============================================================
 function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -507,11 +507,15 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                 <div class="receipt-divider"></div>
                 <div class="receipt-items">
                     ${hasItems ? items.map(item => {
+                        const product = posProducts.find(p => p.id === item.product_id);
+                        const productName = product ? product.name : (item.product_name || item.name || 'منتج');
                         const price = item.isCustomPrice ? item.customPrice : item.price;
-                        const itemName = item.name || item.product_name || 'منتج';
                         return `
                             <div class="receipt-item">
-                                <span class="item-name">${escapeHtml(itemName)}${item.isCustomPrice ? ' <span style="color:#ffc800;font-size:0.7rem;">(معدّل)</span>' : ''}</span>
+                                <span class="item-name">
+                                    ${escapeHtml(productName)}
+                                    ${item.isCustomPrice ? ' <span style="color:#ffc800;font-size:0.7rem;">(معدّل)</span>' : ''}
+                                </span>
                                 <span class="item-qty">${item.quantity}</span>
                                 <span class="item-price">${formatCurrency(price)}</span>
                                 <span class="item-total">${formatCurrency(price * item.quantity)}</span>
@@ -704,10 +708,10 @@ async function checkout() {
             return;
         }
 
-        // ===== عرض الفاتورة =====
+        // ===== عرض الفاتورة (قبل التفريغ) =====
         showReceipt(sale, cart, services, total, invoiceType);
 
-        // ===== تفريغ السلة =====
+        // ===== تفريغ السلة (بعد العرض) =====
         cart = [];
         services = [];
         updateCart();
@@ -725,7 +729,7 @@ async function checkout() {
 }
 
 // ============================================================
-// عرض الفاتورة النهائية (مع تفاصيل المنتجات والخدمات)
+// عرض الفاتورة النهائية (مع تفاصيل كاملة)
 // ============================================================
 function showReceipt(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -763,11 +767,15 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
                 <div class="receipt-divider"></div>
                 <div class="receipt-items">
                     ${hasItems ? items.map(item => {
+                        const product = posProducts.find(p => p.id === item.product_id);
+                        const productName = product ? product.name : (item.product_name || item.name || 'منتج');
                         const price = item.isCustomPrice ? item.customPrice : item.price;
-                        const itemName = item.name || item.product_name || 'منتج';
                         return `
                             <div class="receipt-item">
-                                <span class="item-name">${escapeHtml(itemName)}${item.isCustomPrice ? ' <span style="color:#ffc800;font-size:0.7rem;">(معدّل)</span>' : ''}</span>
+                                <span class="item-name">
+                                    ${escapeHtml(productName)}
+                                    ${item.isCustomPrice ? ' <span style="color:#ffc800;font-size:0.7rem;">(معدّل)</span>' : ''}
+                                </span>
                                 <span class="item-qty">${item.quantity}</span>
                                 <span class="item-price">${formatCurrency(price)}</span>
                                 <span class="item-total">${formatCurrency(price * item.quantity)}</span>
@@ -1096,7 +1104,9 @@ function sendReceiptWhatsApp() {
     
     items.forEach(item => {
         const price = item.isCustomPrice ? item.customPrice : item.price;
-        message += `• ${item.name || item.product_name}\n`;
+        const product = posProducts.find(p => p.id === item.product_id);
+        const productName = product ? product.name : (item.product_name || item.name || 'منتج');
+        message += `• ${productName}\n`;
         message += `  ${item.quantity} × ${formatCurrency(price)} = ${formatCurrency(price * item.quantity)}\n`;
     });
     
