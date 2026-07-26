@@ -469,7 +469,7 @@ function previewInvoice() {
 }
 
 // ============================================================
-// عرض معاينة الفاتورة (مع تفاصيل كاملة)
+// عرض معاينة الفاتورة (مع تفاصيل المنتجات والخدمات)
 // ============================================================
 function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -522,9 +522,13 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                             </div>
                         `;
                     }).join('') : `<div class="receipt-item" style="color:rgba(255,255,255,0.3);text-align:center;grid-column:span 4;">⚠️ لا توجد منتجات</div>`}
+                    
+                    <!-- ===== الخدمات / المصنعية ===== -->
                     ${hasServices ? `
                         <div class="receipt-divider"></div>
-                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">🛠️ خدمات / مصنعية</div>
+                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">
+                            🛠️ خدمات / مصنعية
+                        </div>
                         ${servicesList.map(service => `
                             <div class="receipt-item" style="color:#ffc800;">
                                 <span class="item-name">${escapeHtml(service.description)}</span>
@@ -729,7 +733,7 @@ async function checkout() {
 }
 
 // ============================================================
-// عرض الفاتورة النهائية (مع تفاصيل كاملة)
+// عرض الفاتورة النهائية (مع تفاصيل المنتجات والخدمات)
 // ============================================================
 function showReceipt(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -782,9 +786,13 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
                             </div>
                         `;
                     }).join('') : `<div class="receipt-item" style="color:rgba(255,255,255,0.3);text-align:center;grid-column:span 4;">⚠️ لا توجد منتجات</div>`}
+                    
+                    <!-- ===== الخدمات / المصنعية ===== -->
                     ${hasServices ? `
                         <div class="receipt-divider"></div>
-                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">🛠️ خدمات / مصنعية</div>
+                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">
+                            🛠️ خدمات / مصنعية
+                        </div>
                         ${servicesList.map(service => `
                             <div class="receipt-item" style="color:#ffc800;">
                                 <span class="item-name">${escapeHtml(service.description)}</span>
