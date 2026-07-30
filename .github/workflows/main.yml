@@ -16,8 +16,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Show files
-        run: ls
+      - name: Install ESLint
+        run: npm install eslint --save-dev
 
-      - name: Done
-        run: echo "Workflow is working"
+      - name: Run ESLint
+        run: npx eslint .
