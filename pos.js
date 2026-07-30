@@ -1,5 +1,5 @@
 // ============================================================
-// POS SYSTEM - النسخة الكاملة مع الخدمات وتعديل الأسعار
+// POS SYSTEM - النسخة النهائية (مع إصلاح خصم الكمية والطباعة)
 // ============================================================
 
 let posProducts = [];
@@ -469,7 +469,7 @@ function previewInvoice() {
 }
 
 // ============================================================
-// عرض معاينة الفاتورة (مع تفاصيل المنتجات والخدمات)
+// عرض معاينة الفاتورة
 // ============================================================
 function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -522,13 +522,9 @@ function showReceiptPreview(sale, items, servicesList, total, type = 'final') {
                             </div>
                         `;
                     }).join('') : `<div class="receipt-item" style="color:rgba(255,255,255,0.3);text-align:center;grid-column:span 4;">⚠️ لا توجد منتجات</div>`}
-                    
-                    <!-- ===== الخدمات / المصنعية ===== -->
                     ${hasServices ? `
                         <div class="receipt-divider"></div>
-                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">
-                            🛠️ خدمات / مصنعية
-                        </div>
+                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">🛠️ خدمات / مصنعية</div>
                         ${servicesList.map(service => `
                             <div class="receipt-item" style="color:#ffc800;">
                                 <span class="item-name">${escapeHtml(service.description)}</span>
@@ -577,31 +573,39 @@ function closeReceiptPreviewAndCheckout() {
 }
 
 // ============================================================
-// ✅ إتمام البيع
+// ✅ إتمام البيع (مع إصلاح خصم الكمية)
 // ============================================================
 async function checkout() {
+    // ===== 1. التحقق من وجود منتجات أو خدمات =====
     if (cart.length === 0 && services.length === 0) {
         showToast('⚠️ السلة فارغة. أضف منتجات أو خدمات أولاً', 'error');
+        console.warn('⚠️ Checkout: Cart is empty');
         return;
     }
 
+    // ===== 2. التحقق من وجود Supabase =====
     if (typeof supabaseClient === 'undefined') {
         showToast('❌ خطأ في الاتصال بقاعدة البيانات', 'error');
+        console.error('❌ Checkout: supabaseClient is not defined');
         return;
     }
 
+    // ===== 3. التحقق من المخزون =====
     for (const item of cart) {
         const product = posProducts.find(p => p.id === item.id);
         if (!product) {
             showToast(`❌ المنتج ${item.name} غير موجود في النظام`, 'error');
+            console.error(`❌ Checkout: Product ${item.name} not found`);
             return;
         }
         if (product.quantity < item.quantity) {
             showToast(`⚠️ الكمية المطلوبة من ${item.name} غير متوفرة\nالمتوفر: ${product.quantity} | المطلوب: ${item.quantity}`, 'error');
+            console.warn(`⚠️ Checkout: Insufficient stock for ${item.name}`);
             return;
         }
     }
 
+    // ===== 4. محاولة إتمام البيع =====
     try {
         showToast('⏳ جاري إتمام البيع...', 'info');
         
@@ -611,6 +615,7 @@ async function checkout() {
         const customerNameInput = document.getElementById('customerName');
         const customerName = customerNameInput ? customerNameInput.value.trim() : 'عميل';
 
+        // ===== 5. تجهيز بيانات الفاتورة =====
         const sale = {
             id: saleId,
             total: total,
@@ -637,57 +642,94 @@ async function checkout() {
 
         console.log('📦 Sale data:', JSON.stringify(sale, null, 2));
         console.log('📦 Items data:', JSON.stringify(items, null, 2));
+        console.log('🛠️ Services:', JSON.stringify(services, null, 2));
 
         lastSaleData = { sale, items, services, total };
 
+        // ===== 6. حفظ البيانات =====
         if (navigator.onLine) {
-            const { error: saleError } = await supabaseClient
+            // ===== 6a. حفظ المبيع في جدول sales =====
+            console.log('📤 Inserting into sales table...');
+            const { data: saleData, error: saleError } = await supabaseClient
                 .from('sales')
-                .insert([sale]);
-            
+                .insert([sale])
+                .select();
+
             if (saleError) {
                 console.error('❌ Sale error:', saleError);
                 showToast(`❌ فشل حفظ الفاتورة: ${saleError.message}`, 'error');
                 throw saleError;
             }
-            
-            const { error: itemsError } = await supabaseClient
+            console.log('✅ Sale saved successfully:', saleData);
+
+            // ===== 6b. حفظ عناصر المبيع في جدول sale_items =====
+            console.log('📤 Inserting into sale_items table...');
+            const { data: itemsData, error: itemsError } = await supabaseClient
                 .from('sale_items')
-                .insert(items);
-            
+                .insert(items)
+                .select();
+
             if (itemsError) {
                 console.error('❌ Items error:', itemsError);
                 showToast(`❌ فشل حفظ عناصر الفاتورة: ${itemsError.message}`, 'error');
                 throw itemsError;
             }
+            console.log('✅ Sale items saved successfully:', itemsData);
 
+            // ============================================================
+            // ===== 6c. ✅ تحديث المخزون (مرة واحدة فقط) =====
+            // ============================================================
             if (invoiceType === 'final') {
+                console.log('📤 Updating products table...');
                 for (const item of cart) {
                     const product = posProducts.find(p => p.id === item.id);
                     if (product) {
                         const newQuantity = product.quantity - item.quantity;
-                        await supabaseClient
+                        
+                        // ✅ تحديث في Supabase (مرة واحدة)
+                        const { data: updateData, error: updateError } = await supabaseClient
                             .from('products')
                             .update({ quantity: newQuantity })
-                            .eq('id', item.id);
-                        
-                        product.quantity = newQuantity;
-                        
-                        await supabaseClient
+                            .eq('id', item.id)
+                            .select();
+
+                        if (updateError) {
+                            console.warn(`⚠️ Failed to update stock for ${item.name}:`, updateError);
+                        } else {
+                            // ✅ تحديث المتغير المحلي بعد التحديث
+                            product.quantity = newQuantity;
+                            console.log(`✅ Stock updated for ${item.name}: ${product.quantity} → ${newQuantity}`, updateData);
+                        }
+
+                        // ===== 6d. تسجيل حركة المخزون =====
+                        console.log('📤 Inserting into stock_movements table...');
+                        const { data: movementData, error: movementError } = await supabaseClient
                             .from('stock_movements')
                             .insert([{
                                 product_id: item.id,
                                 type: 'out',
                                 quantity: item.quantity,
-                                note: `بيع - فاتورة #${saleId.slice(0, 8)}`
-                            }]);
+                                note: `بيع - فاتورة #${saleId.slice(0, 8)}`,
+                                created_at: new Date().toISOString()
+                            }])
+                            .select();
+
+                        if (movementError) {
+                            console.warn(`⚠️ Failed to record stock movement for ${item.name}:`, movementError);
+                        } else {
+                            console.log(`✅ Stock movement recorded for ${item.name}`, movementData);
+                        }
                     }
                 }
+            } else {
+                console.log('📄 Draft invoice - stock not deducted');
             }
 
             showToast('✅ تم إتمام البيع بنجاح!', 'success');
 
         } else if (typeof offlineManager !== 'undefined' && offlineManager) {
+            // ===== 7. وضع غير متصل =====
+            console.log('📴 Offline mode - saving to local DB');
             await offlineManager.saveToLocalDB('sales', sale);
             await offlineManager.saveToLocalDB('sale_items', items);
 
@@ -709,18 +751,19 @@ async function checkout() {
             showToast('📴 تم البيع (سيتم المزامنة عند الاتصال)', 'info');
         } else {
             showToast('❌ لا يوجد اتصال بالإنترنت ولا يوجد تخزين محلي', 'error');
+            console.error('❌ Checkout: No connection and no offline manager');
             return;
         }
 
-        // ===== عرض الفاتورة (قبل التفريغ) =====
+        // ===== 8. عرض الفاتورة =====
         showReceipt(sale, cart, services, total, invoiceType);
 
-        // ===== تفريغ السلة (بعد العرض) =====
+        // ===== 9. تفريغ السلة والخدمات =====
         cart = [];
         services = [];
         updateCart();
 
-        // ===== تحديث البيانات =====
+        // ===== 10. تحديث البيانات =====
         await loadPOSProducts();
         if (typeof loadDashboardData === 'function') {
             await loadDashboardData();
@@ -733,7 +776,7 @@ async function checkout() {
 }
 
 // ============================================================
-// عرض الفاتورة النهائية (مع تفاصيل المنتجات والخدمات)
+// عرض الفاتورة النهائية
 // ============================================================
 function showReceipt(sale, items, servicesList, total, type = 'final') {
     const modal = document.getElementById('receiptModal');
@@ -786,13 +829,9 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
                             </div>
                         `;
                     }).join('') : `<div class="receipt-item" style="color:rgba(255,255,255,0.3);text-align:center;grid-column:span 4;">⚠️ لا توجد منتجات</div>`}
-                    
-                    <!-- ===== الخدمات / المصنعية ===== -->
                     ${hasServices ? `
                         <div class="receipt-divider"></div>
-                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">
-                            🛠️ خدمات / مصنعية
-                        </div>
+                        <div style="padding:0.5rem 0;color:#ffc800;font-weight:600;font-size:0.9rem;">🛠️ خدمات / مصنعية</div>
                         ${servicesList.map(service => `
                             <div class="receipt-item" style="color:#ffc800;">
                                 <span class="item-name">${escapeHtml(service.description)}</span>
@@ -826,28 +865,35 @@ function showReceipt(sale, items, servicesList, total, type = 'final') {
 }
 
 // ============================================================
-// 🖨️ طباعة الفاتورة
+// 🖨️ طباعة الفاتورة (نسخة محسنة)
 // ============================================================
 function printReceipt() {
     try {
+        // 1. جلب محتوى الفاتورة
         const receiptContent = document.getElementById('receiptBody')?.innerHTML;
-        if (!receiptContent || receiptContent.trim() === '') {
+        
+        // 2. التحقق من وجود محتوى
+        if (!receiptContent || receiptContent.trim() === '' || receiptContent.includes('لا توجد منتجات')) {
             showToast('⚠️ لا يوجد محتوى للطباعة. يرجى إنشاء فاتورة أولاً.', 'error');
+            console.warn('⚠️ printReceipt: receiptBody is empty or invalid');
             return;
         }
 
+        // 3. فتح نافذة الطباعة
         const printWindow = window.open('', '_blank', 'width=500,height=700');
         
+        // 4. إذا منع المتصفح النافذة المنبثقة
         if (!printWindow) {
             showToast('⚠️ الرجاء السماح للنوافذ المنبثقة (Pop-up) في المتصفح', 'error');
             
+            // حل بديل: الطباعة في نفس الصفحة
             const shouldUseFallback = confirm(
                 '⚠️ تعذر فتح نافذة الطباعة.\n\n' +
-                'هل تريد طباعة الفاتورة في الصفحة الحالية بدلاً من ذلك؟\n' +
-                '(سيتم إخفاء العناصر غير الضرورية مؤقتاً)'
+                'هل تريد طباعة الفاتورة في الصفحة الحالية بدلاً من ذلك؟'
             );
             
             if (shouldUseFallback) {
+                // إخفاء العناصر غير المرغوب فيها
                 const sidebar = document.querySelector('.sidebar');
                 const topbar = document.querySelector('.topbar');
                 const quickActions = document.querySelector('.quick-actions');
@@ -862,8 +908,10 @@ function printReceipt() {
                 if (modalHeader) modalHeader.style.display = 'none';
                 if (modalClose) modalClose.style.display = 'none';
                 
+                // طباعة
                 window.print();
                 
+                // إعادة العناصر بعد الطباعة
                 setTimeout(() => {
                     if (sidebar) sidebar.style.display = '';
                     if (topbar) topbar.style.display = '';
@@ -878,6 +926,7 @@ function printReceipt() {
             return;
         }
 
+        // 5. بناء HTML للطباعة
         const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -1059,20 +1108,18 @@ function printReceipt() {
                     <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة الفاتورة</button>
                     <button class="close-btn no-print" onclick="window.close()">✖ إغلاق</button>
                     <script>
-                        (function() {
-                            if (document.readyState === 'complete') {
-                                setTimeout(function() { window.print(); }, 800);
-                            } else {
-                                window.addEventListener('load', function() {
-                                    setTimeout(function() { window.print(); }, 800);
-                                });
-                            }
-                        })();
+                        // الطباعة التلقائية بعد تحميل الصفحة
+                        window.onload = function() {
+                            setTimeout(function() {
+                                window.print();
+                            }, 1000);
+                        };
                     <\/script>
                 </body>
             </html>
         `;
 
+        // 6. كتابة المحتوى في النافذة الجديدة
         printWindow.document.write(htmlContent);
         printWindow.document.close();
         printWindow.focus();
