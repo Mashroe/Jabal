@@ -20,4 +20,4 @@ jobs:
         run: npm install eslint --save-dev
 
       - name: Run ESLint
-        run: npx eslint .
+        run: npx eslint . --config eslint.config.js
